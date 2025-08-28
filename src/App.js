@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FaCut, FaScissors, FaCrown, FaStar } from 'react-icons/fa';
+import { FaCut, FaScissors, FaCrown, FaStar, FaUserTie } from 'react-icons/fa';
 
 // Styled Components
 // A dark, responsive container for the entire application.
@@ -163,6 +163,117 @@ const Stars = styled.div`
   margin-bottom: 0.5rem;
 `;
 
+// Styled components for the appointment form
+const AppointmentSection = styled(ServicesSection)`
+  background-color: #1f1f1f;
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #0d0d0d;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+`;
+
+const FormGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+`;
+
+const Label = styled.label`
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #f0f0f0;
+`;
+
+const Input = styled.input`
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  &:focus {
+    outline: none;
+    border-color: #ffc107;
+  }
+`;
+
+const Select = styled.select`
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  &:focus {
+    outline: none;
+    border-color: #ffc107;
+  }
+`;
+
+const Option = styled.option`
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+`;
+
+const SubmitButton = styled(Button).attrs({ as: 'button', type: 'submit' })`
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  margin-top: 1rem;
+`;
+
+// Styled components for the About Us section
+const AboutSection = styled(ServicesSection)`
+  background-color: #1a1a1a;
+`;
+
+const AboutText = styled.p`
+  max-width: 800px;
+  margin: 0 auto 3rem;
+  line-height: 1.6;
+  font-size: 1.1rem;
+  color: #e0e0e0;
+`;
+
+const BarberCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  background-color: #0d0d0d;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+`;
+
+const BarberImage = styled.img`
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #ffc107;
+  margin-bottom: 1rem;
+`;
+
+const BarberName = styled.h3`
+  font-size: 1.5rem;
+  color: #ffc107;
+  margin-bottom: 0.5rem;
+`;
+
+const BarberBio = styled.p`
+  font-style: italic;
+  color: #aaa;
+  line-height: 1.4;
+`;
+
+
 // Simple footer.
 const Footer = styled.footer`
   text-align: center;
@@ -175,6 +286,13 @@ const Footer = styled.footer`
 
 // Main App Component
 function App() {
+  // State for form fields
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [service, setService] = useState('');
+  const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
+
   const services = [
     { name: "Classic Haircut", price: "$30" },
     { name: "Hot Towel Shave", price: "$25" },
@@ -200,10 +318,42 @@ function App() {
     },
   ];
 
+  const barbers = [
+    {
+      name: "Jack R.",
+      bio: "With over 10 years of experience, Jack is a master of classic fades and precise beard work. He's a true artist.",
+      image: "https://placehold.co/300x300/1a1a1a/ffffff?text=Jack"
+    },
+    {
+      name: "Sarah G.",
+      bio: "Specializing in modern styles and unique cuts, Sarah brings a creative touch to every client. She is a rising star in the industry.",
+      image: "https://placehold.co/300x300/1a1a1a/ffffff?text=Sarah"
+    },
+    {
+      name: "David M.",
+      bio: "David's passion for grooming is matched only by his attention to detail. He provides the ultimate hot towel shave experience.",
+      image: "https://placehold.co/300x300/1a1a1a/ffffff?text=David"
+    }
+  ];
+
   const renderStars = (count) => {
     return Array.from({ length: 5 }, (_, i) => (
       <FaStar key={i} color={i < count ? "#ffc107" : "#333"} />
     ));
+  };
+
+  const handleBookingSubmit = (e) => {
+    e.preventDefault();
+    // In a real app, you would send this data to a backend or a booking API
+    console.log('Booking submitted:', { name, email, service, date, time });
+    alert('Booking request sent successfully! We will contact you shortly to confirm.');
+    
+    // Reset form fields after submission
+    setName('');
+    setEmail('');
+    setService('');
+    setDate('');
+    setTime('');
   };
 
   return (
@@ -217,7 +367,6 @@ function App() {
         <HeroText>
           Experience the art of grooming in a modern and relaxing atmosphere. We are dedicated to providing the perfect cut and shave.
         </HeroText>
-        <Button href="#">Book Your Appointment</Button>
       </HeroSection>
 
       <ServicesSection>
@@ -245,6 +394,85 @@ function App() {
           ))}
         </ServiceGrid>
       </ReviewsSection>
+
+      <AppointmentSection>
+        <SectionTitle>Book Your Appointment</SectionTitle>
+        <Form onSubmit={handleBookingSubmit}>
+          <FormGroup>
+            <Label htmlFor="name">Full Name</Label>
+            <Input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="email">Email Address</Label>
+            <Input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="service">Service</Label>
+            <Select
+              id="service"
+              value={service}
+              onChange={(e) => setService(e.target.value)}
+              required
+            >
+              <Option value="" disabled>Select a Service</Option>
+              {services.map((s, index) => (
+                <Option key={index} value={s.name}>
+                  {s.name}
+                </Option>
+              ))}
+            </Select>
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              type="date"
+              id="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="time">Time</Label>
+            <Input
+              type="time"
+              id="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              required
+            />
+          </FormGroup>
+          <SubmitButton>Book Now</SubmitButton>
+        </Form>
+      </AppointmentSection>
+
+      <AboutSection>
+        <SectionTitle>Meet Our Barbers</SectionTitle>
+        <AboutText>
+          Our team of dedicated barbers is committed to providing the highest quality grooming services. With years of experience and a passion for their craft, they are ready to give you the perfect look.
+        </AboutText>
+        <ServiceGrid>
+          {barbers.map((barber, index) => (
+            <BarberCard key={index}>
+              <BarberImage src={barber.image} alt={barber.name} />
+              <BarberName>{barber.name}</BarberName>
+              <BarberBio>{barber.bio}</BarberBio>
+            </BarberCard>
+          ))}
+        </ServiceGrid>
+      </AboutSection>
 
       <Footer>
         <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
