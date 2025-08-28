@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { FaCut, FaScissors, FaCrown, FaStar } from 'react-icons/fa';
 
 // Styled Components
 // A dark, responsive container for the entire application.
@@ -130,6 +131,38 @@ const Button = styled.a`
   }
 `;
 
+// Section for reviews.
+const ReviewsSection = styled(ServicesSection)`
+  background-color: #1a1a1a;
+`;
+
+const ReviewCard = styled(ServiceCard)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #0d0d0d;
+  padding: 1.5rem;
+  text-align: center;
+  border-radius: 12px;
+`;
+
+const ReviewText = styled.p`
+  font-style: italic;
+  margin: 1rem 0;
+  color: #e0e0e0;
+`;
+
+const ReviewAuthor = styled.p`
+  font-weight: 600;
+  color: #ffc107;
+`;
+
+const Stars = styled.div`
+  color: #ffc107;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+`;
+
 // Simple footer.
 const Footer = styled.footer`
   text-align: center;
@@ -148,6 +181,30 @@ function App() {
     { name: "Beard Trim & Shape", price: "$20" },
     { name: "Haircut & Shave Combo", price: "$50" },
   ];
+
+  const reviews = [
+    {
+      text: "The best haircut I've ever had! The barber was meticulous and the atmosphere was great.",
+      author: "John D.",
+      stars: 5,
+    },
+    {
+      text: "Professional, friendly, and they pay attention to every detail. Highly recommend the hot towel shave!",
+      author: "Michael P.",
+      stars: 5,
+    },
+    {
+      text: "Always a fantastic experience. The team is skilled and I'm never disappointed with the results.",
+      author: "Robert L.",
+      stars: 4,
+    },
+  ];
+
+  const renderStars = (count) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <FaStar key={i} color={i < count ? "#ffc107" : "#333"} />
+    ));
+  };
 
   return (
     <Container>
@@ -175,6 +232,19 @@ function App() {
           ))}
         </ServiceGrid>
       </ServicesSection>
+
+      <ReviewsSection>
+        <SectionTitle>What Our Clients Say</SectionTitle>
+        <ServiceGrid>
+          {reviews.map((review, index) => (
+            <ReviewCard key={index}>
+              <Stars>{renderStars(review.stars)}</Stars>
+              <ReviewText>"{review.text}"</ReviewText>
+              <ReviewAuthor>- {review.author}</ReviewAuthor>
+            </ReviewCard>
+          ))}
+        </ServiceGrid>
+      </ReviewsSection>
 
       <Footer>
         <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
