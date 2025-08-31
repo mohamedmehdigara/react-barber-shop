@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { FaCut, FaScissors, FaCrown, FaStar, FaUserTie } from 'react-icons/fa';
+import { FaCut, FaCrown, FaStar, FaUserTie } from 'react-icons/fa';
 
 // Styled Components
 // A dark, responsive container for the entire application.
@@ -226,6 +226,25 @@ const SubmitButton = styled(Button).attrs({ as: 'button', type: 'submit' })`
   border: none;
   cursor: pointer;
   margin-top: 1rem;
+  ${props => props.disabled && `
+    background-color: #555;
+    cursor: not-allowed;
+  `}
+`;
+
+const ErrorMessage = styled.p`
+  color: #ff6b6b;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+`;
+
+const SuccessMessage = styled.div`
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #1f4e38;
+  color: #d1e7dd;
+  border-radius: 8px;
+  text-align: center;
 `;
 
 // Styled components for the About Us section
@@ -292,12 +311,18 @@ function App() {
   const [service, setService] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  // State for validation errors
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [dateError, setDateError] = useState('');
 
   const services = [
-    { name: "Classic Haircut", price: "$30" },
-    { name: "Hot Towel Shave", price: "$25" },
-    { name: "Beard Trim & Shape", price: "$20" },
-    { name: "Haircut & Shave Combo", price: "$50" },
+    { name: "Classic Haircut", price: "$30", icon: <FaCut /> },
+    { name: "Hot Towel Shave", price: "$25", icon: <FaCut /> },
+    { name: "Beard Trim & Shape", price: "$20", icon: <FaCrown /> },
+    { name: "Haircut & Shave Combo", price: "$50", icon: <FaCut /> },
   ];
 
   const reviews = [
@@ -342,19 +367,57 @@ function App() {
     ));
   };
 
+  const validateForm = () => {
+    let isValid = true;
+    
+    // Name validation
+    if (!name.trim()) {
+      setNameError('Full name is required.');
+      isValid = false;
+    } else {
+      setNameError('');
+    }
+
+    // Email validation (simple regex)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      setEmailError('Please enter a valid email address.');
+      isValid = false;
+    } else {
+      setEmailError('');
+    }
+
+    // Date validation
+    const today = new Date().toISOString().split('T')[0];
+    if (!date || date < today) {
+      setDateError('Please select a future date.');
+      isValid = false;
+    } else {
+      setDateError('');
+    }
+
+    return isValid;
+  };
+
   const handleBookingSubmit = (e) => {
     e.preventDefault();
-    // In a real app, you would send this data to a backend or a booking API
-    console.log('Booking submitted:', { name, email, service, date, time });
-    alert('Booking request sent successfully! We will contact you shortly to confirm.');
-    
-    // Reset form fields after submission
-    setName('');
-    setEmail('');
-    setService('');
-    setDate('');
-    setTime('');
+    if (validateForm()) {
+      console.log('Booking submitted:', { name, email, service, date, time });
+      setIsSubmitted(true);
+      
+      // Reset form fields after submission
+      setName('');
+      setEmail('');
+      setService('');
+      setDate('');
+      setTime('');
+      
+      // Hide success message after 5 seconds
+      setTimeout(() => setIsSubmitted(false), 5000);
+    }
   };
+
+  const isFormValid = name && email && service && date && time && !nameError && !emailError && !dateError;
 
   return (
     <Container>
@@ -367,6 +430,7 @@ function App() {
         <HeroText>
           Experience the art of grooming in a modern and relaxing atmosphere. We are dedicated to providing the perfect cut and shave.
         </HeroText>
+        <Button href="#">Book Your Appointment</Button>
       </HeroSection>
 
       <ServicesSection>
@@ -398,15 +462,21 @@ function App() {
       <AppointmentSection>
         <SectionTitle>Book Your Appointment</SectionTitle>
         <Form onSubmit={handleBookingSubmit}>
+          {isSubmitted && <SuccessMessage>Booking request sent successfully! We will contact you shortly to confirm.</SuccessMessage>}
           <FormGroup>
             <Label htmlFor="name">Full Name</Label>
             <Input
               type="text"
               id="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setNameError('');
+              }}
+              onBlur={validateForm}
               required
             />
+            {nameError && <ErrorMessage>{nameError}</ErrorMessage>}
           </FormGroup>
           <FormGroup>
             <Label htmlFor="email">Email Address</Label>
@@ -414,9 +484,14 @@ function App() {
               type="email"
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailError('');
+              }}
+              onBlur={validateForm}
               required
             />
+            {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
           </FormGroup>
           <FormGroup>
             <Label htmlFor="service">Service</Label>
@@ -440,9 +515,14 @@ function App() {
               type="date"
               id="date"
               value={date}
-              onChange={(e) => setDate(e.target.value)}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setDateError('');
+              }}
+              onBlur={validateForm}
               required
             />
+            {dateError && <ErrorMessage>{dateError}</ErrorMessage>}
           </FormGroup>
           <FormGroup>
             <Label htmlFor="time">Time</Label>
@@ -454,7 +534,7 @@ function App() {
               required
             />
           </FormGroup>
-          <SubmitButton>Book Now</SubmitButton>
+          <SubmitButton disabled={!isFormValid}>Book Now</SubmitButton>
         </Form>
       </AppointmentSection>
 
