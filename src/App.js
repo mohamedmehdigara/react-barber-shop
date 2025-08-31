@@ -292,6 +292,49 @@ const BarberBio = styled.p`
   line-height: 1.4;
 `;
 
+// Styled Components for Price Calculator
+const PriceCalculatorSection = styled(ServicesSection)`
+  background-color: #1f1f1f;
+`;
+
+const PriceCalculatorCard = styled(ServiceCard)`
+  background-color: #0d0d0d;
+  padding: 2rem;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: left;
+`;
+
+const PriceTitle = styled.h3`
+  font-size: 1.5rem;
+  color: #ffc107;
+  margin-bottom: 1rem;
+`;
+
+const ServiceItem = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+`;
+
+const ServiceLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+`;
+
+const TotalPrice = styled.div`
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  margin-top: 1.5rem;
+  text-align: center;
+  border-top: 2px solid #333;
+  padding-top: 1rem;
+`;
 
 // Simple footer.
 const Footer = styled.footer`
@@ -312,6 +355,7 @@ function App() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [selectedServices, setSelectedServices] = useState([]);
 
   // State for validation errors
   const [nameError, setNameError] = useState('');
@@ -319,10 +363,10 @@ function App() {
   const [dateError, setDateError] = useState('');
 
   const services = [
-    { name: "Classic Haircut", price: "$30", icon: <FaCut /> },
-    { name: "Hot Towel Shave", price: "$25", icon: <FaCut /> },
-    { name: "Beard Trim & Shape", price: "$20", icon: <FaCrown /> },
-    { name: "Haircut & Shave Combo", price: "$50", icon: <FaCut /> },
+    { name: "Classic Haircut", price: 30, icon: <FaCut /> },
+    { name: "Hot Towel Shave", price: 25, icon: <FaCut /> },
+    { name: "Beard Trim & Shape", price: 20, icon: <FaCrown /> },
+    { name: "Haircut & Shave Combo", price: 50, icon: <FaCut /> },
   ];
 
   const reviews = [
@@ -417,6 +461,21 @@ function App() {
     }
   };
 
+  const handleServiceSelection = (serviceName) => {
+    setSelectedServices(prevSelected => {
+      if (prevSelected.includes(serviceName)) {
+        return prevSelected.filter(name => name !== serviceName);
+      } else {
+        return [...prevSelected, serviceName];
+      }
+    });
+  };
+
+  const totalCost = selectedServices.reduce((total, serviceName) => {
+    const service = services.find(s => s.name === serviceName);
+    return total + (service ? service.price : 0);
+  }, 0);
+
   const isFormValid = name && email && service && date && time && !nameError && !emailError && !dateError;
 
   return (
@@ -440,11 +499,34 @@ function App() {
             <ServiceCard key={index}>
               <ServiceIcon>{service.icon}</ServiceIcon>
               <ServiceName>{service.name}</ServiceName>
-              <ServicePrice>{service.price}</ServicePrice>
+              <ServicePrice>${service.price}</ServicePrice>
             </ServiceCard>
           ))}
         </ServiceGrid>
       </ServicesSection>
+
+      <PriceCalculatorSection>
+        <SectionTitle>Calculate Your Total</SectionTitle>
+        <PriceCalculatorCard>
+          <PriceTitle>Select your services to see the total price:</PriceTitle>
+          {services.map((service, index) => (
+            <ServiceItem key={index}>
+              <ServiceLabel>
+                <input
+                  type="checkbox"
+                  checked={selectedServices.includes(service.name)}
+                  onChange={() => handleServiceSelection(service.name)}
+                />
+                {service.name}
+              </ServiceLabel>
+              <span>${service.price}</span>
+            </ServiceItem>
+          ))}
+          <TotalPrice>
+            Total: ${totalCost}
+          </TotalPrice>
+        </PriceCalculatorCard>
+      </PriceCalculatorSection>
 
       <ReviewsSection>
         <SectionTitle>What Our Clients Say</SectionTitle>
@@ -524,41 +606,42 @@ function App() {
             />
             {dateError && <ErrorMessage>{dateError}</ErrorMessage>}
           </FormGroup>
-          <FormGroup>
-            <Label htmlFor="time">Time</Label>
-            <Input
-              type="time"
-              id="time"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-              required
-            />
-          </FormGroup>
-          <SubmitButton disabled={!isFormValid}>Book Now</SubmitButton>
-        </Form>
-      </AppointmentSection>
+            <FormGroup>
+              <Label htmlFor="time">Time</Label>
+              <Input
+                type="time"
+                id="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                required
+              />
+            </FormGroup>
+            <SubmitButton disabled={!isFormValid}>Book Now</SubmitButton>
+          </Form>
+        </AppointmentSection>
 
-      <AboutSection>
-        <SectionTitle>Meet Our Barbers</SectionTitle>
-        <AboutText>
-          Our team of dedicated barbers is committed to providing the highest quality grooming services. With years of experience and a passion for their craft, they are ready to give you the perfect look.
-        </AboutText>
-        <ServiceGrid>
-          {barbers.map((barber, index) => (
-            <BarberCard key={index}>
-              <BarberImage src={barber.image} alt={barber.name} />
-              <BarberName>{barber.name}</BarberName>
-              <BarberBio>{barber.bio}</BarberBio>
-            </BarberCard>
-          ))}
-        </ServiceGrid>
-      </AboutSection>
-
-      <Footer>
-        <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
-      </Footer>
-    </Container>
-  );
-}
-
-export default App;
+        <AboutSection>
+          <SectionTitle>Meet Our Barbers</SectionTitle>
+          <AboutText>
+            Our team of dedicated barbers is committed to providing the highest quality grooming services. With years of experience and a passion for their craft, they are ready to give you the perfect look.
+          </AboutText>
+          <ServiceGrid>
+            {barbers.map((barber, index) => (
+              <BarberCard key={index}>
+                <BarberImage src={barber.image} alt={barber.name} />
+                <BarberName>{barber.name}</BarberName>
+                <BarberBio>{barber.bio}</BarberBio>
+              </BarberCard>
+            ))}
+          </ServiceGrid>
+        </AboutSection>
+  
+        <Footer>
+          <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
+        </Footer>
+      </Container>
+    );
+  }
+  
+  export default App;
+  
