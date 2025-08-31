@@ -10,6 +10,7 @@ import PriceCalculatorSection from './components/PriceCalculatorSection';
 import ReviewSection from './components/ReviewSection';
 import BookingForm from './components/BookingForm';
 import BarbersSection from './components/BarbersSection';
+import StyleQuiz from './components/StyleQuiz';
 
 function App() {
   const [theme, setTheme] = useState('dark');
@@ -173,6 +174,8 @@ function App() {
       <ReviewSection theme={theme} allReviews={allReviews} currentReviewIndex={currentReviewIndex} setCurrentReviewIndex={setCurrentReviewIndex} setSubmittedReviews={setSubmittedReviews} />
       <BookingForm theme={theme} schedule={schedule} setSchedule={setSchedule} services={services} barbers={barbers} isSubmitted={isSubmitted} setIsSubmitted={setIsSubmitted} />
       <BarbersSection barbers={barbers} theme={theme} />
+      <StyleQuiz theme={theme} haircuts={haircuts} />
+
   
       <Footer theme={theme}>
         <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
