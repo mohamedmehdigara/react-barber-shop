@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { FaCut, FaCrown, FaStar, FaUserTie } from 'react-icons/fa';
+import { FaCut, FaCrown, FaStar } from 'react-icons/fa';
 
 // Styled Components
 // A dark, responsive container for the entire application.
@@ -276,6 +276,15 @@ const SuccessMessage = styled.div`
   text-align: center;
 `;
 
+const AvailabilityMessage = styled.p`
+  color: #ffc107;
+  font-size: 0.9rem;
+  text-align: left;
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+`;
+
 // Styled components for the About Us section
 const AboutSection = styled(ServicesSection)`
   background-color: #1a1a1a;
@@ -377,20 +386,37 @@ const Footer = styled.footer`
 
 // Main App Component
 function App() {
-  // State for form fields
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [barber, setBarber] = useState('');
   const [service, setService] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
-
-  // State for validation errors
   const [nameError, setNameError] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [dateError, setDateError] = useState('');
+  
+  // A temporary, in-memory schedule to track availability.
+  // The schedule is hardcoded for specific dates in 2025.
+  const initialSchedule = {
+    'Jack R.': {
+      '2025-09-01': ['09:00', '10:00', '11:00', '13:00', '14:00'],
+      '2025-09-02': ['09:30', '10:30', '11:30', '12:30'],
+      '2025-09-03': ['10:00', '11:00', '13:00', '14:00', '15:00'],
+    },
+    'Sarah G.': {
+      '2025-09-01': ['09:00', '10:00', '11:00', '12:00', '13:00'],
+      '2025-09-02': ['10:00', '11:00', '12:00', '14:00'],
+      '2025-09-03': ['09:30', '10:30', '11:30', '13:30', '14:30'],
+    },
+    'David M.': {
+      '2025-09-01': ['10:00', '11:00', '12:00', '13:00'],
+      '2025-09-02': ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
+      '2025-09-03': ['10:00', '11:00', '12:00', '13:00'],
+    }
+  };
+  const [schedule, setSchedule] = useState(initialSchedule);
 
   const services = [
     { name: "Classic Haircut", price: 30, icon: <FaCut /> },
@@ -468,15 +494,6 @@ function App() {
       setNameError('');
     }
 
-    // Email validation (simple regex)
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim() || !emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address.');
-      isValid = false;
-    } else {
-      setEmailError('');
-    }
-
     // Date validation
     const today = new Date().toISOString().split('T')[0];
     if (!date || date < today) {
@@ -491,13 +508,21 @@ function App() {
 
   const handleBookingSubmit = (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log('Booking submitted:', { name, email, service, date, time });
+    if (validateForm() && barber && date && time) {
+      // Update the schedule to "book" the time slot
+      const newSchedule = JSON.parse(JSON.stringify(schedule)); // Deep copy
+      const availableTimes = newSchedule[barber][date];
+      if (availableTimes) {
+        newSchedule[barber][date] = availableTimes.filter(slot => slot !== time);
+        setSchedule(newSchedule);
+      }
+
+      // Show success message
       setIsSubmitted(true);
       
       // Reset form fields after submission
       setName('');
-      setEmail('');
+      setBarber('');
       setService('');
       setDate('');
       setTime('');
@@ -522,7 +547,7 @@ function App() {
     return total + (service ? service.price : 0);
   }, 0);
 
-  const isFormValid = name && email && service && date && time && !nameError && !emailError && !dateError;
+  const isFormValid = name && barber && service && date && time && !nameError && !dateError;
 
   return (
     <Container>
@@ -590,7 +615,7 @@ function App() {
       <AppointmentSection>
         <SectionTitle>Book Your Appointment</SectionTitle>
         <Form onSubmit={handleBookingSubmit}>
-          {isSubmitted && <SuccessMessage>Booking request sent successfully! We will contact you shortly to confirm.</SuccessMessage>}
+          {isSubmitted && <SuccessMessage>Booking request sent successfully! We have confirmed your appointment. The time slot is now removed from availability.</SuccessMessage>}
           <FormGroup>
             <Label htmlFor="name">Full Name</Label>
             <Input
@@ -607,32 +632,20 @@ function App() {
             {nameError && <ErrorMessage>{nameError}</ErrorMessage>}
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setEmailError('');
-              }}
-              onBlur={validateForm}
-              required
-            />
-            {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
-          </FormGroup>
-          <FormGroup>
-            <Label htmlFor="service">Service</Label>
+            <Label htmlFor="barber">Choose Your Barber</Label>
             <Select
-              id="service"
-              value={service}
-              onChange={(e) => setService(e.target.value)}
+              id="barber"
+              value={barber}
+              onChange={(e) => {
+                setBarber(e.target.value);
+                setTime(''); // Reset time when barber changes
+              }}
               required
             >
-              <Option value="" disabled>Select a Service</Option>
-              {services.map((s, index) => (
-                <Option key={index} value={s.name}>
-                  {s.name}
+              <Option value="" disabled>Select a Barber</Option>
+              {barbers.map((b, index) => (
+                <Option key={index} value={b.name}>
+                  {b.name}
                 </Option>
               ))}
             </Select>
@@ -646,6 +659,7 @@ function App() {
               onChange={(e) => {
                 setDate(e.target.value);
                 setDateError('');
+                setTime(''); // Reset time when date changes
               }}
               onBlur={validateForm}
               required
@@ -653,19 +667,51 @@ function App() {
             {dateError && <ErrorMessage>{dateError}</ErrorMessage>}
           </FormGroup>
             <FormGroup>
+              <Label htmlFor="service">Service</Label>
+              <Select
+                id="service"
+                value={service}
+                onChange={(e) => setService(e.target.value)}
+                required
+              >
+                <Option value="" disabled>Select a Service</Option>
+                {services.map((s, index) => (
+                  <Option key={index} value={s.name}>
+                    {s.name}
+                  </Option>
+                ))}
+              </Select>
+            </FormGroup>
+            <FormGroup>
               <Label htmlFor="time">Time</Label>
-              <Input
-                type="time"
+              <Select
                 id="time"
                 value={time}
                 onChange={(e) => setTime(e.target.value)}
+                disabled={!barber || !date}
                 required
-              />
+              >
+                <Option value="" disabled>Select a Time</Option>
+                {barber && date && schedule[barber] && schedule[barber][date] ? (
+                  schedule[barber][date].map((t, index) => (
+                    <Option key={index} value={t}>
+                      {t}
+                    </Option>
+                  ))
+                ) : (
+                  <Option value="" disabled>No times available</Option>
+                )}
+              </Select>
             </FormGroup>
+            {barber && date && (!schedule[barber] || !schedule[barber][date] || schedule[barber][date].length === 0) && (
+              <AvailabilityMessage>
+                Sorry, no time slots are available for {barber} on {date}. The current schedule is only for September 1st-3rd, 2025.
+              </AvailabilityMessage>
+            )}
             <SubmitButton disabled={!isFormValid}>Book Now</SubmitButton>
           </Form>
         </AppointmentSection>
-
+        
         <AboutSection>
           <SectionTitle>Meet Our Barbers</SectionTitle>
           <AboutText>
@@ -690,3 +736,4 @@ function App() {
   }
   
   export default App;
+  
