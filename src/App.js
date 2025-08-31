@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { FaCut, FaCrown, FaStar } from 'react-icons/fa';
+
+// Keyframes for animations
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
 
 // Styled Components
 // A dark, responsive container for the entire application.
@@ -58,11 +70,12 @@ const HeroText = styled.p`
   max-width: 600px;
 `;
 
-// Section for services.
+// Section for services with a fade-in animation.
 const ServicesSection = styled.section`
   padding: 4rem 2rem;
   text-align: center;
   background-color: #1f1f1f;
+  animation: ${fadeIn} 1s ease-out;
 `;
 
 const SectionTitle = styled.h2`
@@ -131,9 +144,16 @@ const Button = styled.a`
   }
 `;
 
-// Section for reviews.
+const ViewDetailsButton = styled(Button).attrs({ as: 'button' })`
+  font-size: 0.8rem;
+  padding: 0.6rem 1.2rem;
+  margin-top: 1rem;
+`;
+
+// Section for reviews with a fade-in animation.
 const ReviewsSection = styled(ServicesSection)`
   background-color: #1a1a1a;
+  animation: ${fadeIn} 1s ease-out;
 `;
 
 // Styled components for the testimonial slider
@@ -192,9 +212,10 @@ const Stars = styled.div`
   margin-bottom: 0.5rem;
 `;
 
-// Styled components for the appointment form
+// Styled components for the appointment form with a fade-in animation.
 const AppointmentSection = styled(ServicesSection)`
   background-color: #1f1f1f;
+  animation: ${fadeIn} 1s ease-out;
 `;
 
 const Form = styled.form`
@@ -285,9 +306,10 @@ const AvailabilityMessage = styled.p`
   font-style: italic;
 `;
 
-// Styled components for the About Us section
+// Styled components for the About Us section with a fade-in animation.
 const AboutSection = styled(ServicesSection)`
   background-color: #1a1a1a;
+  animation: ${fadeIn} 1s ease-out;
 `;
 
 const AboutText = styled.p`
@@ -330,9 +352,10 @@ const BarberBio = styled.p`
   line-height: 1.4;
 `;
 
-// Styled Components for Price Calculator
+// Styled Components for Price Calculator with a fade-in animation.
 const PriceCalculatorSection = styled(ServicesSection)`
   background-color: #1f1f1f;
+  animation: ${fadeIn} 1s ease-out;
 `;
 
 const PriceCalculatorCard = styled(ServiceCard)`
@@ -384,6 +407,58 @@ const Footer = styled.footer`
   font-size: 0.9rem;
 `;
 
+// Modal styled components
+const ModalOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ModalContent = styled.div`
+  background-color: #1f1f1f;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+  max-width: 600px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  animation: ${fadeIn} 0.5s ease-out;
+`;
+
+const ModalCloseButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #ffc107;
+  cursor: pointer;
+`;
+
+const ModalTitle = styled.h3`
+  font-size: 2rem;
+  font-weight: 600;
+  color: #ffc107;
+  margin-bottom: 1rem;
+`;
+
+const ModalDescription = styled.p`
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+`;
+
+
 // Main App Component
 function App() {
   const [name, setName] = useState('');
@@ -396,6 +471,7 @@ function App() {
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [nameError, setNameError] = useState('');
   const [dateError, setDateError] = useState('');
+  const [modalState, setModalState] = useState({ isOpen: false, service: null });
   
   // A temporary, in-memory schedule to track availability.
   // The schedule is hardcoded for specific dates in 2025.
@@ -419,10 +495,30 @@ function App() {
   const [schedule, setSchedule] = useState(initialSchedule);
 
   const services = [
-    { name: "Classic Haircut", price: 30, icon: <FaCut /> },
-    { name: "Hot Towel Shave", price: 25, icon: <FaCut /> },
-    { name: "Beard Trim & Shape", price: 20, icon: <FaCrown /> },
-    { name: "Haircut & Shave Combo", price: 50, icon: <FaCut /> },
+    { 
+      name: "Classic Haircut", 
+      price: 30, 
+      icon: <FaCut />,
+      description: "A traditional haircut tailored to your head and face shape. Our barbers use clippers and scissors to create a precise, clean finish. Includes a wash and style."
+    },
+    { 
+      name: "Hot Towel Shave", 
+      price: 25, 
+      icon: <FaCut />,
+      description: "A luxurious and relaxing hot towel shave. We prepare your skin with hot towels and pre-shave oil, followed by a close shave and a soothing aftershave balm."
+    },
+    { 
+      name: "Beard Trim & Shape", 
+      price: 20, 
+      icon: <FaCrown />,
+      description: "Keep your beard looking its best with a professional trim and shape. Our barbers will sculpt your beard to perfection, followed by a final oil treatment."
+    },
+    { 
+      name: "Haircut & Shave Combo", 
+      price: 50, 
+      icon: <FaCut />,
+      description: "The ultimate grooming package. Get a classic haircut and our signature hot towel shave at a discounted price."
+    },
   ];
 
   const reviews = [
@@ -547,6 +643,14 @@ function App() {
     return total + (service ? service.price : 0);
   }, 0);
 
+  const handleOpenModal = (service) => {
+    setModalState({ isOpen: true, service });
+  };
+
+  const handleCloseModal = () => {
+    setModalState({ isOpen: false, service: null });
+  };
+
   const isFormValid = name && barber && service && date && time && !nameError && !dateError;
 
   return (
@@ -571,6 +675,7 @@ function App() {
               <ServiceIcon>{service.icon}</ServiceIcon>
               <ServiceName>{service.name}</ServiceName>
               <ServicePrice>${service.price}</ServicePrice>
+              <ViewDetailsButton onClick={() => handleOpenModal(service)}>View Details</ViewDetailsButton>
             </ServiceCard>
           ))}
         </ServiceGrid>
@@ -731,9 +836,21 @@ function App() {
         <Footer>
           <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
         </Footer>
+
+        {modalState.isOpen && modalState.service && (
+          <ModalOverlay onClick={handleCloseModal}>
+            <ModalContent onClick={e => e.stopPropagation()}>
+              <ModalCloseButton onClick={handleCloseModal}>&times;</ModalCloseButton>
+              <ModalTitle>{modalState.service.name}</ModalTitle>
+              <ModalDescription>{modalState.service.description}</ModalDescription>
+              <Button as="button" onClick={handleCloseModal}>Close</Button>
+            </ModalContent>
+          </ModalOverlay>
+        )}
       </Container>
     );
   }
   
   export default App;
   
+
