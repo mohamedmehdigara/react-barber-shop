@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { FaCut, FaCrown, FaStar, FaUserTie } from 'react-icons/fa';
 
@@ -136,14 +136,43 @@ const ReviewsSection = styled(ServicesSection)`
   background-color: #1a1a1a;
 `;
 
-const ReviewCard = styled(ServiceCard)`
+// Styled components for the testimonial slider
+const ReviewSlider = styled.div`
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+`;
+
+const ReviewCard = styled.div`
   background-color: #0d0d0d;
   padding: 1.5rem;
   text-align: center;
   border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 500px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: opacity 0.5s ease;
+`;
+
+const SliderButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #ffc107;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+  &:hover {
+    transform: scale(1.1);
+    color: #fff;
+  }
 `;
 
 const ReviewText = styled.p`
@@ -356,6 +385,7 @@ function App() {
   const [time, setTime] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
 
   // State for validation errors
   const [nameError, setNameError] = useState('');
@@ -404,6 +434,22 @@ function App() {
       image: "https://placehold.co/300x300/1a1a1a/ffffff?text=David"
     }
   ];
+
+  // Effect to automatically slide through reviews
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentReviewIndex((prevIndex) => (prevIndex + 1) % reviews.length);
+    }, 5000); // Change review every 5 seconds
+    return () => clearInterval(timer);
+  }, [reviews.length]);
+
+  const handleNextReview = () => {
+    setCurrentReviewIndex((prevIndex) => (prevIndex + 1) % reviews.length);
+  };
+
+  const handlePrevReview = () => {
+    setCurrentReviewIndex((prevIndex) => (prevIndex - 1 + reviews.length) % reviews.length);
+  };
 
   const renderStars = (count) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -530,15 +576,15 @@ function App() {
 
       <ReviewsSection>
         <SectionTitle>What Our Clients Say</SectionTitle>
-        <ServiceGrid>
-          {reviews.map((review, index) => (
-            <ReviewCard key={index}>
-              <Stars>{renderStars(review.stars)}</Stars>
-              <ReviewText>"{review.text}"</ReviewText>
-              <ReviewAuthor>- {review.author}</ReviewAuthor>
-            </ReviewCard>
-          ))}
-        </ServiceGrid>
+        <ReviewSlider>
+          <SliderButton onClick={handlePrevReview}>&lt;</SliderButton>
+          <ReviewCard>
+            <Stars>{renderStars(reviews[currentReviewIndex].stars)}</Stars>
+            <ReviewText>"{reviews[currentReviewIndex].text}"</ReviewText>
+            <ReviewAuthor>- {reviews[currentReviewIndex].author}</ReviewAuthor>
+          </ReviewCard>
+          <SliderButton onClick={handleNextReview}>&gt;</SliderButton>
+        </ReviewSlider>
       </ReviewsSection>
 
       <AppointmentSection>
@@ -644,4 +690,3 @@ function App() {
   }
   
   export default App;
-  
