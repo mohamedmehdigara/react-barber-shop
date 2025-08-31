@@ -163,4 +163,7 @@ const BookingForm = ({ theme, schedule, setSchedule, services, barbers, isSubmit
   );
 };
 
+
+
+
 export default BookingForm;
