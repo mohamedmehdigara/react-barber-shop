@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { FaCut, FaCrown, FaStar } from 'react-icons/fa';
+import { FaCut, FaCrown, FaStar, FaSun, FaMoon, FaHeart } from 'react-icons/fa';
 
 // Keyframes for animations
 const fadeIn = keyframes`
@@ -14,25 +14,49 @@ const fadeIn = keyframes`
   }
 `;
 
+// Theme colors
+const themes = {
+  dark: {
+    background: '#1a1a1a',
+    cardBackground: '#0d0d0d',
+    primary: '#ffc107',
+    text: '#f0f0f0',
+    textSecondary: '#e0e0e0',
+    muted: '#888',
+    shadow: 'rgba(0, 0, 0, 0.4)',
+    border: '#333',
+  },
+  light: {
+    background: '#f5f5f5',
+    cardBackground: '#fff',
+    primary: '#5d5d5d',
+    text: '#2c2c2c',
+    textSecondary: '#4a4a4a',
+    muted: '#aaa',
+    shadow: 'rgba(0, 0, 0, 0.1)',
+    border: '#ddd',
+  },
+};
+
 // Styled Components
-// A dark, responsive container for the entire application.
 const Container = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #f0f0f0;
+  background-color: ${props => themes[props.theme].background};
+  color: ${props => themes[props.theme].text};
   font-family: 'Inter', sans-serif;
+  transition: background-color 0.5s ease, color 0.5s ease;
 `;
 
-// Header with a bold, gold-accented title.
 const Header = styled.header`
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   padding: 2rem;
-  background-color: #0d0d0d;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  background-color: ${props => themes[props.theme].cardBackground};
+  box-shadow: 0 4px 6px ${props => themes[props.theme].shadow};
+  transition: background-color 0.5s ease;
 `;
 
 const Title = styled.h1`
@@ -40,7 +64,7 @@ const Title = styled.h1`
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 
   @media (max-width: 768px) {
@@ -48,7 +72,18 @@ const Title = styled.h1`
   }
 `;
 
-// Hero section with a background image and overlay for text readability.
+const ThemeToggle = styled.button`
+  background: none;
+  border: none;
+  color: ${props => themes[props.theme].primary};
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  &:hover {
+    color: ${props => props.theme === 'dark' ? '#fff' : '#000'};
+  }
+`;
+
 const HeroSection = styled.section`
   display: flex;
   justify-content: center;
@@ -66,26 +101,26 @@ const HeroText = styled.p`
   font-size: 1.5rem;
   font-style: italic;
   margin-top: 1rem;
-  color: #e0e0e0;
+  color: ${props => themes[props.theme].textSecondary};
   max-width: 600px;
 `;
 
-// Section for services with a fade-in animation.
-const ServicesSection = styled.section`
+const Section = styled.section`
   padding: 4rem 2rem;
   text-align: center;
-  background-color: #1f1f1f;
+  background-color: ${props => themes[props.theme].background};
   animation: ${fadeIn} 1s ease-out;
+  transition: background-color 0.5s ease;
 `;
 
 const SectionTitle = styled.h2`
   font-size: 2rem;
   font-weight: 600;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   margin-bottom: 2rem;
 `;
 
-const ServiceGrid = styled.div`
+const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
@@ -93,43 +128,42 @@ const ServiceGrid = styled.div`
   margin: 0 auto;
 `;
 
-const ServiceCard = styled.div`
-  background-color: #0d0d0d;
+const Card = styled.div`
+  background-color: ${props => themes[props.theme].cardBackground};
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 15px ${props => themes[props.theme].shadow};
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.5s ease;
   
   &:hover {
     transform: translateY(-10px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 8px 20px ${props => themes[props.theme].shadow};
   }
 `;
 
-const ServiceIcon = styled.div`
+const Icon = styled.div`
   font-size: 3rem;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   margin-bottom: 1rem;
 `;
 
-const ServiceName = styled.h3`
+const Name = styled.h3`
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: #fff;
+  color: ${props => themes[props.theme].text};
 `;
 
-const ServicePrice = styled.p`
+const Price = styled.p`
   font-size: 1.2rem;
   font-style: italic;
-  color: #888;
+  color: ${props => themes[props.theme].muted};
 `;
 
-// Call-to-action button.
 const Button = styled.a`
   display: inline-block;
-  background-color: #ffc107;
-  color: #1a1a1a;
+  background-color: ${props => themes[props.theme].primary};
+  color: ${props => props.theme === 'dark' ? '#1a1a1a' : '#fff'};
   padding: 0.8rem 2.5rem;
   border-radius: 50px;
   text-decoration: none;
@@ -139,7 +173,7 @@ const Button = styled.a`
   transition: background-color 0.3s ease, transform 0.2s ease;
   
   &:hover {
-    background-color: #e0a800;
+    background-color: ${props => props.theme === 'dark' ? '#e0a800' : '#4a4a4a'};
     transform: scale(1.05);
   }
 `;
@@ -150,13 +184,6 @@ const ViewDetailsButton = styled(Button).attrs({ as: 'button' })`
   margin-top: 1rem;
 `;
 
-// Section for reviews with a fade-in animation.
-const ReviewsSection = styled(ServicesSection)`
-  background-color: #1a1a1a;
-  animation: ${fadeIn} 1s ease-out;
-`;
-
-// Styled components for the testimonial slider
 const ReviewSlider = styled.div`
   display: flex;
   align-items: center;
@@ -167,11 +194,11 @@ const ReviewSlider = styled.div`
 `;
 
 const ReviewCard = styled.div`
-  background-color: #0d0d0d;
+  background-color: ${props => themes[props.theme].cardBackground};
   padding: 1.5rem;
   text-align: center;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 15px ${props => themes[props.theme].shadow};
   width: 100%;
   max-width: 500px;
   min-height: 200px;
@@ -179,43 +206,37 @@ const ReviewCard = styled.div`
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: opacity 0.5s ease;
+  transition: opacity 0.5s ease, background-color 0.5s ease;
 `;
 
 const SliderButton = styled.button`
   background: none;
   border: none;
   font-size: 2rem;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   cursor: pointer;
   transition: transform 0.2s ease, color 0.2s ease;
   &:hover {
     transform: scale(1.1);
-    color: #fff;
+    color: ${props => themes[props.theme].text};
   }
 `;
 
 const ReviewText = styled.p`
   font-style: italic;
   margin: 1rem 0;
-  color: #e0e0e0;
+  color: ${props => themes[props.theme].textSecondary};
 `;
 
 const ReviewAuthor = styled.p`
   font-weight: 600;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
 `;
 
 const Stars = styled.div`
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   font-size: 1.2rem;
   margin-bottom: 0.5rem;
-`;
-
-// Styled components for the appointment form with a fade-in animation.
-const AppointmentSection = styled(ServicesSection)`
-  background-color: #1f1f1f;
-  animation: ${fadeIn} 1s ease-out;
 `;
 
 const Form = styled.form`
@@ -225,9 +246,9 @@ const Form = styled.form`
   max-width: 600px;
   margin: 0 auto;
   padding: 2rem;
-  background-color: #0d0d0d;
+  background-color: ${props => themes[props.theme].cardBackground};
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 15px ${props => themes[props.theme].shadow};
 `;
 
 const FormGroup = styled.div`
@@ -239,36 +260,49 @@ const FormGroup = styled.div`
 const Label = styled.label`
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: #f0f0f0;
+  color: ${props => themes[props.theme].text};
 `;
 
 const Input = styled.input`
   padding: 0.8rem;
   border-radius: 8px;
-  border: 1px solid #333;
-  background-color: #1a1a1a;
-  color: #f0f0f0;
+  border: 1px solid ${props => themes[props.theme].border};
+  background-color: ${props => themes[props.theme].background};
+  color: ${props => themes[props.theme].text};
   &:focus {
     outline: none;
-    border-color: #ffc107;
+    border-color: ${props => themes[props.theme].primary};
+  }
+`;
+
+const TextArea = styled.textarea`
+  padding: 0.8rem;
+  border-radius: 8px;
+  border: 1px solid ${props => themes[props.theme].border};
+  background-color: ${props => themes[props.theme].background};
+  color: ${props => themes[props.theme].text};
+  min-height: 100px;
+  &:focus {
+    outline: none;
+    border-color: ${props => themes[props.theme].primary};
   }
 `;
 
 const Select = styled.select`
   padding: 0.8rem;
   border-radius: 8px;
-  border: 1px solid #333;
-  background-color: #1a1a1a;
-  color: #f0f0f0;
+  border: 1px solid ${props => themes[props.theme].border};
+  background-color: ${props => themes[props.theme].background};
+  color: ${props => themes[props.theme].text};
   &:focus {
     outline: none;
-    border-color: #ffc107;
+    border-color: ${props => themes[props.theme].primary};
   }
 `;
 
 const Option = styled.option`
-  background-color: #1a1a1a;
-  color: #f0f0f0;
+  background-color: ${props => themes[props.theme].background};
+  color: ${props => themes[props.theme].text};
 `;
 
 const SubmitButton = styled(Button).attrs({ as: 'button', type: 'submit' })`
@@ -298,7 +332,7 @@ const SuccessMessage = styled.div`
 `;
 
 const AvailabilityMessage = styled.p`
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   font-size: 0.9rem;
   text-align: left;
   margin-top: -0.5rem;
@@ -306,10 +340,8 @@ const AvailabilityMessage = styled.p`
   font-style: italic;
 `;
 
-// Styled components for the About Us section with a fade-in animation.
-const AboutSection = styled(ServicesSection)`
-  background-color: #1a1a1a;
-  animation: ${fadeIn} 1s ease-out;
+const AboutSection = styled(Section)`
+  background-color: ${props => themes[props.theme].background};
 `;
 
 const AboutText = styled.p`
@@ -317,7 +349,7 @@ const AboutText = styled.p`
   margin: 0 auto 3rem;
   line-height: 1.6;
   font-size: 1.1rem;
-  color: #e0e0e0;
+  color: ${props => themes[props.theme].textSecondary};
 `;
 
 const BarberCard = styled.div`
@@ -326,9 +358,9 @@ const BarberCard = styled.div`
   align-items: center;
   text-align: center;
   padding: 2rem;
-  background-color: #0d0d0d;
+  background-color: ${props => themes[props.theme].cardBackground};
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 15px ${props => themes[props.theme].shadow};
 `;
 
 const BarberImage = styled.img`
@@ -336,30 +368,28 @@ const BarberImage = styled.img`
   height: 150px;
   border-radius: 50%;
   object-fit: cover;
-  border: 4px solid #ffc107;
+  border: 4px solid ${props => themes[props.theme].primary};
   margin-bottom: 1rem;
 `;
 
 const BarberName = styled.h3`
   font-size: 1.5rem;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   margin-bottom: 0.5rem;
 `;
 
 const BarberBio = styled.p`
   font-style: italic;
-  color: #aaa;
+  color: ${props => themes[props.theme].muted};
   line-height: 1.4;
 `;
 
-// Styled Components for Price Calculator with a fade-in animation.
-const PriceCalculatorSection = styled(ServicesSection)`
-  background-color: #1f1f1f;
-  animation: ${fadeIn} 1s ease-out;
+const PriceCalculatorSection = styled(Section)`
+  background-color: ${props => themes[props.theme].background};
 `;
 
-const PriceCalculatorCard = styled(ServiceCard)`
-  background-color: #0d0d0d;
+const PriceCalculatorCard = styled(Card)`
+  background-color: ${props => themes[props.theme].cardBackground};
   padding: 2rem;
   max-width: 600px;
   margin: 0 auto;
@@ -368,7 +398,7 @@ const PriceCalculatorCard = styled(ServiceCard)`
 
 const PriceTitle = styled.h3`
   font-size: 1.5rem;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   margin-bottom: 1rem;
 `;
 
@@ -385,29 +415,28 @@ const ServiceLabel = styled.label`
   gap: 1rem;
   font-size: 1.1rem;
   cursor: pointer;
+  color: ${props => themes[props.theme].text};
 `;
 
 const TotalPrice = styled.div`
   font-size: 2rem;
   font-weight: bold;
-  color: #fff;
+  color: ${props => themes[props.theme].text};
   margin-top: 1.5rem;
   text-align: center;
-  border-top: 2px solid #333;
+  border-top: 2px solid ${props => themes[props.theme].border};
   padding-top: 1rem;
 `;
 
-// Simple footer.
 const Footer = styled.footer`
   text-align: center;
   padding: 1.5rem;
-  background-color: #0d0d0d;
+  background-color: ${props => themes[props.theme].cardBackground};
   margin-top: auto;
-  color: #aaa;
+  color: ${props => themes[props.theme].muted};
   font-size: 0.9rem;
 `;
 
-// Modal styled components
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0;
@@ -422,7 +451,7 @@ const ModalOverlay = styled.div`
 `;
 
 const ModalContent = styled.div`
-  background-color: #1f1f1f;
+  background-color: ${props => themes[props.theme].cardBackground};
   padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
@@ -440,27 +469,73 @@ const ModalCloseButton = styled.button`
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   cursor: pointer;
 `;
 
 const ModalTitle = styled.h3`
   font-size: 2rem;
   font-weight: 600;
-  color: #ffc107;
+  color: ${props => themes[props.theme].primary};
   margin-bottom: 1rem;
 `;
 
 const ModalDescription = styled.p`
   font-size: 1.1rem;
-  color: #e0e0e0;
+  color: ${props => themes[props.theme].textSecondary};
   line-height: 1.6;
   margin-bottom: 2rem;
 `;
 
+const HaircutImage = styled.img`
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+`;
 
-// Main App Component
+const FavoriteButton = styled.button`
+  background: none;
+  border: none;
+  color: ${props => props.isFavorite ? 'red' : props.theme === 'dark' ? '#ffc107' : '#5d5d5d'};
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  margin-top: 1rem;
+`;
+
+const FavoriteButtonInModal = styled(FavoriteButton)`
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+`;
+
+const ReviewForm = styled.div`
+  background-color: ${props => themes[props.theme].cardBackground};
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px ${props => themes[props.theme].shadow};
+  max-width: 600px;
+  margin: 2rem auto 0;
+`;
+
+const RatingStars = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  color: #ddd;
+  cursor: pointer;
+  margin-bottom: 1rem;
+
+  svg {
+    color: ${props => props.theme === 'dark' ? '#ffc107' : '#5d5d5d'};
+  }
+`;
+
 function App() {
+  const [theme, setTheme] = useState('dark');
   const [name, setName] = useState('');
   const [barber, setBarber] = useState('');
   const [service, setService] = useState('');
@@ -469,12 +544,20 @@ function App() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [selectedServices, setSelectedServices] = useState([]);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [submittedReviews, setSubmittedReviews] = useState([]);
   const [nameError, setNameError] = useState('');
   const [dateError, setDateError] = useState('');
   const [modalState, setModalState] = useState({ isOpen: false, service: null });
-  
-  // A temporary, in-memory schedule to track availability.
-  // The schedule is hardcoded for specific dates in 2025.
+  const [galleryModalState, setGalleryModalState] = useState({ isOpen: false, haircut: null });
+  const [favorites, setFavorites] = useState([]);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewRating, setReviewRating] = useState(0);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
+
   const initialSchedule = {
     'Jack R.': {
       '2025-09-01': ['09:00', '10:00', '11:00', '13:00', '14:00'],
@@ -521,7 +604,7 @@ function App() {
     },
   ];
 
-  const reviews = [
+  const initialReviews = [
     {
       text: "The best haircut I've ever had! The barber was meticulous and the atmosphere was great.",
       author: "John D.",
@@ -536,6 +619,33 @@ function App() {
       text: "Always a fantastic experience. The team is skilled and I'm never disappointed with the results.",
       author: "Robert L.",
       stars: 4,
+    },
+  ];
+
+  const haircuts = [
+    {
+      id: 1,
+      name: "Classic Fade",
+      image: "https://placehold.co/300x200/1f1f1f/ffffff?text=Classic+Fade",
+      description: "A timeless, low-maintenance haircut with a smooth transition from short to long. Perfect for a sharp, clean look.",
+    },
+    {
+      id: 2,
+      name: "Pompadour",
+      image: "https://placehold.co/300x200/1f1f1f/ffffff?text=Pompadour",
+      description: "A stylish and bold haircut featuring short sides and a long top that is swept upwards and backward. Requires a bit of styling product.",
+    },
+    {
+      id: 3,
+      name: "Buzz Cut",
+      image: "https://placehold.co/300x200/1f1f1f/ffffff?text=Buzz+Cut",
+      description: "The ultimate in simplicity and utility. A uniform length all over, perfect for a no-fuss, clean-cut appearance.",
+    },
+    {
+      id: 4,
+      name: "Crew Cut",
+      image: "https://placehold.co/300x200/1f1f1f/ffffff?text=Crew+Cut",
+      description: "A short, classic haircut that is tapered on the sides and back, with the top slightly longer. A versatile and neat style for any occasion.",
     },
   ];
 
@@ -557,32 +667,33 @@ function App() {
     }
   ];
 
-  // Effect to automatically slide through reviews
+  // Combine initial and submitted reviews for the slider
+  const allReviews = [...submittedReviews, ...initialReviews];
+
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentReviewIndex((prevIndex) => (prevIndex + 1) % reviews.length);
-    }, 5000); // Change review every 5 seconds
+      setCurrentReviewIndex((prevIndex) => (prevIndex + 1) % allReviews.length);
+    }, 5000);
     return () => clearInterval(timer);
-  }, [reviews.length]);
+  }, [allReviews.length]);
 
   const handleNextReview = () => {
-    setCurrentReviewIndex((prevIndex) => (prevIndex + 1) % reviews.length);
+    setCurrentReviewIndex((prevIndex) => (prevIndex + 1) % allReviews.length);
   };
 
   const handlePrevReview = () => {
-    setCurrentReviewIndex((prevIndex) => (prevIndex - 1 + reviews.length) % reviews.length);
+    setCurrentReviewIndex((prevIndex) => (prevIndex - 1 + allReviews.length) % allReviews.length);
   };
 
   const renderStars = (count) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <FaStar key={i} color={i < count ? "#ffc107" : "#333"} />
+      <FaStar key={i} color={i < count ? themes[theme].primary : themes[theme].border} />
     ));
   };
 
   const validateForm = () => {
     let isValid = true;
     
-    // Name validation
     if (!name.trim()) {
       setNameError('Full name is required.');
       isValid = false;
@@ -590,7 +701,6 @@ function App() {
       setNameError('');
     }
 
-    // Date validation
     const today = new Date().toISOString().split('T')[0];
     if (!date || date < today) {
       setDateError('Please select a future date.');
@@ -605,25 +715,21 @@ function App() {
   const handleBookingSubmit = (e) => {
     e.preventDefault();
     if (validateForm() && barber && date && time) {
-      // Update the schedule to "book" the time slot
-      const newSchedule = JSON.parse(JSON.stringify(schedule)); // Deep copy
+      const newSchedule = JSON.parse(JSON.stringify(schedule));
       const availableTimes = newSchedule[barber][date];
       if (availableTimes) {
         newSchedule[barber][date] = availableTimes.filter(slot => slot !== time);
         setSchedule(newSchedule);
       }
 
-      // Show success message
       setIsSubmitted(true);
       
-      // Reset form fields after submission
       setName('');
       setBarber('');
       setService('');
       setDate('');
       setTime('');
       
-      // Hide success message after 5 seconds
       setTimeout(() => setIsSubmitted(false), 5000);
     }
   };
@@ -651,43 +757,103 @@ function App() {
     setModalState({ isOpen: false, service: null });
   };
 
+  const handleOpenGalleryModal = (haircut) => {
+    setGalleryModalState({ isOpen: true, haircut });
+  };
+
+  const handleCloseGalleryModal = () => {
+    setGalleryModalState({ isOpen: false, haircut: null });
+  };
+
+  const toggleFavorite = (id) => {
+    setFavorites(prevFavorites => {
+      if (prevFavorites.includes(id)) {
+        return prevFavorites.filter(favId => favId !== id);
+      } else {
+        return [...prevFavorites, id];
+      }
+    });
+  };
+
+  const handleReviewSubmit = (e) => {
+    e.preventDefault();
+    if (reviewName && reviewText && reviewRating > 0) {
+      const newReview = {
+        text: reviewText,
+        author: reviewName,
+        stars: reviewRating,
+      };
+      setSubmittedReviews(prevReviews => [newReview, ...prevReviews]);
+      setReviewName('');
+      setReviewText('');
+      setReviewRating(0);
+    }
+  };
+
   const isFormValid = name && barber && service && date && time && !nameError && !dateError;
+  const isReviewFormValid = reviewName && reviewText && reviewRating > 0;
 
   return (
-    <Container>
-      <Header>
-        <Title>The Gents' Cut</Title>
+    <Container theme={theme}>
+      <Header theme={theme}>
+        <Title theme={theme}>The Gents' Cut</Title>
+        <ThemeToggle onClick={toggleTheme} theme={theme}>
+          {theme === 'dark' ? <FaSun /> : <FaMoon />}
+        </ThemeToggle>
       </Header>
 
-      <HeroSection>
-        <Title>Craftsmanship. Style. Precision.</Title>
-        <HeroText>
+      <HeroSection theme={theme}>
+        <Title theme={theme}>Craftsmanship. Style. Precision.</Title>
+        <HeroText theme={theme}>
           Experience the art of grooming in a modern and relaxing atmosphere. We are dedicated to providing the perfect cut and shave.
         </HeroText>
-        <Button href="#">Book Your Appointment</Button>
+        <Button href="#" theme={theme}>Book Your Appointment</Button>
       </HeroSection>
 
-      <ServicesSection>
-        <SectionTitle>Our Services</SectionTitle>
-        <ServiceGrid>
+      <Section theme={theme}>
+        <SectionTitle theme={theme}>Our Services</SectionTitle>
+        <Grid>
           {services.map((service, index) => (
-            <ServiceCard key={index}>
-              <ServiceIcon>{service.icon}</ServiceIcon>
-              <ServiceName>{service.name}</ServiceName>
-              <ServicePrice>${service.price}</ServicePrice>
-              <ViewDetailsButton onClick={() => handleOpenModal(service)}>View Details</ViewDetailsButton>
-            </ServiceCard>
+            <Card key={index} theme={theme}>
+              <Icon theme={theme}>{service.icon}</Icon>
+              <Name theme={theme}>{service.name}</Name>
+              <Price theme={theme}>${service.price}</Price>
+              <ViewDetailsButton onClick={() => handleOpenModal(service)} theme={theme}>View Details</ViewDetailsButton>
+            </Card>
           ))}
-        </ServiceGrid>
-      </ServicesSection>
+        </Grid>
+      </Section>
 
-      <PriceCalculatorSection>
-        <SectionTitle>Calculate Your Total</SectionTitle>
-        <PriceCalculatorCard>
-          <PriceTitle>Select your services to see the total price:</PriceTitle>
+      <Section theme={theme}>
+        <SectionTitle theme={theme}>Haircut Gallery</SectionTitle>
+        <Grid>
+          {haircuts.map((haircut) => (
+            <Card key={haircut.id} theme={theme}>
+              <HaircutImage
+                src={haircut.image}
+                alt={haircut.name}
+                onClick={() => handleOpenGalleryModal(haircut)}
+              />
+              <Name theme={theme}>{haircut.name}</Name>
+              <FavoriteButton
+                onClick={() => toggleFavorite(haircut.id)}
+                isFavorite={favorites.includes(haircut.id)}
+                theme={theme}
+              >
+                <FaHeart />
+              </FavoriteButton>
+            </Card>
+          ))}
+        </Grid>
+      </Section>
+
+      <Section theme={theme}>
+        <SectionTitle theme={theme}>Calculate Your Total</SectionTitle>
+        <PriceCalculatorCard theme={theme}>
+          <PriceTitle theme={theme}>Select your services to see the total price:</PriceTitle>
           {services.map((service, index) => (
             <ServiceItem key={index}>
-              <ServiceLabel>
+              <ServiceLabel theme={theme}>
                 <input
                   type="checkbox"
                   checked={selectedServices.includes(service.name)}
@@ -698,31 +864,74 @@ function App() {
               <span>${service.price}</span>
             </ServiceItem>
           ))}
-          <TotalPrice>
+          <TotalPrice theme={theme}>
             Total: ${totalCost}
           </TotalPrice>
         </PriceCalculatorCard>
-      </PriceCalculatorSection>
+      </Section>
 
-      <ReviewsSection>
-        <SectionTitle>What Our Clients Say</SectionTitle>
+      <Section theme={theme}>
+        <SectionTitle theme={theme}>What Our Clients Say</SectionTitle>
         <ReviewSlider>
-          <SliderButton onClick={handlePrevReview}>&lt;</SliderButton>
-          <ReviewCard>
-            <Stars>{renderStars(reviews[currentReviewIndex].stars)}</Stars>
-            <ReviewText>"{reviews[currentReviewIndex].text}"</ReviewText>
-            <ReviewAuthor>- {reviews[currentReviewIndex].author}</ReviewAuthor>
+          <SliderButton onClick={handlePrevReview} theme={theme}>&lt;</SliderButton>
+          <ReviewCard theme={theme}>
+            {allReviews.length > 0 && (
+              <>
+                <Stars theme={theme}>{renderStars(allReviews[currentReviewIndex].stars)}</Stars>
+                <ReviewText theme={theme}>"{allReviews[currentReviewIndex].text}"</ReviewText>
+                <ReviewAuthor theme={theme}>- {allReviews[currentReviewIndex].author}</ReviewAuthor>
+              </>
+            )}
           </ReviewCard>
-          <SliderButton onClick={handleNextReview}>&gt;</SliderButton>
+          <SliderButton onClick={handleNextReview} theme={theme}>&gt;</SliderButton>
         </ReviewSlider>
-      </ReviewsSection>
+        <ReviewForm theme={theme}>
+          <SectionTitle theme={theme}>Leave a Review</SectionTitle>
+          <form onSubmit={handleReviewSubmit}>
+            <FormGroup>
+              <Label htmlFor="reviewName" theme={theme}>Your Name</Label>
+              <Input
+                type="text"
+                id="reviewName"
+                value={reviewName}
+                onChange={(e) => setReviewName(e.target.value)}
+                theme={theme}
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label htmlFor="reviewText" theme={theme}>Your Review</Label>
+              <TextArea
+                id="reviewText"
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                theme={theme}
+                required
+              />
+            </FormGroup>
+            <FormGroup>
+              <Label theme={theme}>Your Rating</Label>
+              <RatingStars theme={theme}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <FaStar
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    style={{ color: reviewRating >= star ? themes[theme].primary : themes[theme].border }}
+                  />
+                ))}
+              </RatingStars>
+            </FormGroup>
+            <SubmitButton theme={theme} disabled={!isReviewFormValid}>Submit Review</SubmitButton>
+          </form>
+        </ReviewForm>
+      </Section>
 
-      <AppointmentSection>
-        <SectionTitle>Book Your Appointment</SectionTitle>
-        <Form onSubmit={handleBookingSubmit}>
+      <Section theme={theme}>
+        <SectionTitle theme={theme}>Book Your Appointment</SectionTitle>
+        <Form onSubmit={handleBookingSubmit} theme={theme}>
           {isSubmitted && <SuccessMessage>Booking request sent successfully! We have confirmed your appointment. The time slot is now removed from availability.</SuccessMessage>}
           <FormGroup>
-            <Label htmlFor="name">Full Name</Label>
+            <Label htmlFor="name" theme={theme}>Full Name</Label>
             <Input
               type="text"
               id="name"
@@ -733,30 +942,32 @@ function App() {
               }}
               onBlur={validateForm}
               required
+              theme={theme}
             />
             {nameError && <ErrorMessage>{nameError}</ErrorMessage>}
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="barber">Choose Your Barber</Label>
+            <Label htmlFor="barber" theme={theme}>Choose Your Barber</Label>
             <Select
               id="barber"
               value={barber}
               onChange={(e) => {
                 setBarber(e.target.value);
-                setTime(''); // Reset time when barber changes
+                setTime('');
               }}
               required
+              theme={theme}
             >
-              <Option value="" disabled>Select a Barber</Option>
+              <Option value="" disabled theme={theme}>Select a Barber</Option>
               {barbers.map((b, index) => (
-                <Option key={index} value={b.name}>
+                <Option key={index} value={b.name} theme={theme}>
                   {b.name}
                 </Option>
               ))}
             </Select>
           </FormGroup>
           <FormGroup>
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="date" theme={theme}>Date</Label>
             <Input
               type="date"
               id="date"
@@ -764,93 +975,120 @@ function App() {
               onChange={(e) => {
                 setDate(e.target.value);
                 setDateError('');
-                setTime(''); // Reset time when date changes
+                setTime('');
               }}
               onBlur={validateForm}
               required
+              theme={theme}
             />
             {dateError && <ErrorMessage>{dateError}</ErrorMessage>}
           </FormGroup>
-            <FormGroup>
-              <Label htmlFor="service">Service</Label>
-              <Select
-                id="service"
-                value={service}
-                onChange={(e) => setService(e.target.value)}
-                required
-              >
-                <Option value="" disabled>Select a Service</Option>
-                {services.map((s, index) => (
-                  <Option key={index} value={s.name}>
-                    {s.name}
+          <FormGroup>
+            <Label htmlFor="service" theme={theme}>Service</Label>
+            <Select
+              id="service"
+              value={service}
+              onChange={(e) => setService(e.target.value)}
+              required
+              theme={theme}
+            >
+              <Option value="" disabled theme={theme}>Select a Service</Option>
+              {services.map((s, index) => (
+                <Option key={index} value={s.name} theme={theme}>
+                  {s.name}
+                </Option>
+              ))}
+            </Select>
+          </FormGroup>
+          <FormGroup>
+            <Label htmlFor="time" theme={theme}>Time</Label>
+            <Select
+              id="time"
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              disabled={!barber || !date}
+              required
+              theme={theme}
+            >
+              <Option value="" disabled theme={theme}>Select a Time</Option>
+              {barber && date && schedule[barber] && schedule[barber][date] ? (
+                schedule[barber][date].map((t, index) => (
+                  <Option key={index} value={t} theme={theme}>
+                    {t}
                   </Option>
-                ))}
-              </Select>
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="time">Time</Label>
-              <Select
-                id="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                disabled={!barber || !date}
-                required
-              >
-                <Option value="" disabled>Select a Time</Option>
-                {barber && date && schedule[barber] && schedule[barber][date] ? (
-                  schedule[barber][date].map((t, index) => (
-                    <Option key={index} value={t}>
-                      {t}
-                    </Option>
-                  ))
-                ) : (
-                  <Option value="" disabled>No times available</Option>
-                )}
-              </Select>
-            </FormGroup>
-            {barber && date && (!schedule[barber] || !schedule[barber][date] || schedule[barber][date].length === 0) && (
-              <AvailabilityMessage>
-                Sorry, no time slots are available for {barber} on {date}. The current schedule is only for September 1st-3rd, 2025.
-              </AvailabilityMessage>
-            )}
-            <SubmitButton disabled={!isFormValid}>Book Now</SubmitButton>
-          </Form>
-        </AppointmentSection>
+                ))
+              ) : (
+                <Option value="" disabled theme={theme}>No times available</Option>
+              )}
+            </Select>
+          </FormGroup>
+          {barber && date && (!schedule[barber] || !schedule[barber][date] || schedule[barber][date].length === 0) && (
+            <AvailabilityMessage theme={theme}>
+              Sorry, no time slots are available for {barber} on {date}. The current schedule is only for September 1st-3rd, 2025.
+            </AvailabilityMessage>
+          )}
+          <SubmitButton disabled={!isFormValid} theme={theme}>Book Now</SubmitButton>
+        </Form>
+      </Section>
         
-        <AboutSection>
-          <SectionTitle>Meet Our Barbers</SectionTitle>
-          <AboutText>
-            Our team of dedicated barbers is committed to providing the highest quality grooming services. With years of experience and a passion for their craft, they are ready to give you the perfect look.
-          </AboutText>
-          <ServiceGrid>
-            {barbers.map((barber, index) => (
-              <BarberCard key={index}>
-                <BarberImage src={barber.image} alt={barber.name} />
-                <BarberName>{barber.name}</BarberName>
-                <BarberBio>{barber.bio}</BarberBio>
-              </BarberCard>
-            ))}
-          </ServiceGrid>
-        </AboutSection>
+      <Section theme={theme}>
+        <SectionTitle theme={theme}>Meet Our Barbers</SectionTitle>
+        <AboutText theme={theme}>
+          Our team of dedicated barbers is committed to providing the highest quality grooming services. With years of experience and a passion for their craft, they are ready to give you the perfect look.
+        </AboutText>
+        <Grid>
+          {barbers.map((barber, index) => (
+            <BarberCard key={index} theme={theme}>
+              <BarberImage src={barber.image} alt={barber.name} theme={theme} />
+              <BarberName theme={theme}>{barber.name}</BarberName>
+              <BarberBio theme={theme}>{barber.bio}</BarberBio>
+            </BarberCard>
+          ))}
+        </Grid>
+      </Section>
   
-        <Footer>
-          <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
-        </Footer>
+      <Footer theme={theme}>
+        <p>&copy; 2024 The Gents' Cut. All Rights Reserved.</p>
+      </Footer>
 
-        {modalState.isOpen && modalState.service && (
-          <ModalOverlay onClick={handleCloseModal}>
-            <ModalContent onClick={e => e.stopPropagation()}>
-              <ModalCloseButton onClick={handleCloseModal}>&times;</ModalCloseButton>
-              <ModalTitle>{modalState.service.name}</ModalTitle>
-              <ModalDescription>{modalState.service.description}</ModalDescription>
-              <Button as="button" onClick={handleCloseModal}>Close</Button>
-            </ModalContent>
-          </ModalOverlay>
-        )}
-      </Container>
-    );
-  }
+      {modalState.isOpen && modalState.service && (
+        <ModalOverlay onClick={handleCloseModal}>
+          <ModalContent onClick={e => e.stopPropagation()} theme={theme}>
+            <ModalCloseButton onClick={handleCloseModal} theme={theme}>&times;</ModalCloseButton>
+            <ModalTitle theme={theme}>{modalState.service.name}</ModalTitle>
+            <ModalDescription theme={theme}>{modalState.service.description}</ModalDescription>
+            <Button as="button" onClick={handleCloseModal} theme={theme}>Close</Button>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {galleryModalState.isOpen && galleryModalState.haircut && (
+        <ModalOverlay onClick={handleCloseGalleryModal}>
+          <ModalContent onClick={e => e.stopPropagation()} theme={theme}>
+            <ModalCloseButton onClick={handleCloseGalleryModal} theme={theme}>&times;</ModalCloseButton>
+            <FavoriteButtonInModal
+              onClick={() => toggleFavorite(galleryModalState.haircut.id)}
+              isFavorite={favorites.includes(galleryModalState.haircut.id)}
+              theme={theme}
+            >
+              <FaHeart />
+            </FavoriteButtonInModal>
+            <img
+              src={galleryModalState.haircut.image}
+              alt={galleryModalState.haircut.name}
+              style={{ width: '100%', borderRadius: '8px' }}
+            />
+            <ModalTitle theme={theme}>{galleryModalState.haircut.name}</ModalTitle>
+            <ModalDescription theme={theme}>{galleryModalState.haircut.description}</ModalDescription>
+            <Button as="button" onClick={handleCloseGalleryModal} theme={theme}>Close</Button>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+    </Container>
+  );
+}
   
-  export default App;
+export default App;
   
+
 
