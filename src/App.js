@@ -1,386 +1,507 @@
-import React, { useState, useMemo, useEffect, useCallback, useReducer } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Scissors, 
   Calendar, 
   User, 
-  ChevronRight, 
   ChevronLeft, 
-  LayoutDashboard, 
   CheckCircle2, 
   Clock, 
   TrendingUp,
   Trash2,
+  Sun,
   Moon,
-  Sun
+  ShieldCheck,
+  Plus,
+  ArrowRight,
+  Zap
 } from 'lucide-react';
 
-// --- 1. SETTINGS & BUSINESS RULES ---
-const APP_KEY = "enterprise_barber_v3";
+// --- DATA CONFIGURATION ---
 const SERVICES = [
-  { id: 's1', name: 'Master Haircut', price: 45, duration: 45, icon: <Scissors size={18}/> },
-  { id: 's2', name: 'Signature Shave', price: 35, duration: 30, icon: <Clock size={18}/> },
-  { id: 's3', name: 'The Collective Combo', price: 70, duration: 75, icon: <CheckCircle2 size={18}/> },
-  { id: 's4', name: 'Beard Sculpting', price: 25, duration: 30, icon: <Scissors size={18}/> }
+  { id: 's1', name: 'Executive Cut', price: 55, duration: 45, category: 'Hair', icon: '✂️', desc: 'Hand-tailored precision for the modern leader.' },
+  { id: 's2', name: 'The Heirloom Shave', price: 40, duration: 30, category: 'Shave', icon: '🪒', desc: 'Traditional straight-razor technique with essential oils.' },
+  { id: 's3', name: 'Royal Treatment', price: 95, duration: 90, category: 'Combo', icon: '👑', desc: 'The full ensemble: Cut, Shave, Scalp, and Facial.' },
+  { id: 's4', name: 'Beard Sculpt', price: 30, duration: 30, category: 'Beard', icon: '🧔', desc: 'Architectural line-work and volume management.' }
+];
+
+const ADDONS = [
+  { id: 'a1', name: 'Charcoal Mask', price: 15, duration: 15 },
+  { id: 'a2', name: 'Steam Treatment', price: 10, duration: 10 },
+  { id: 'a3', name: 'Grey Blending', price: 25, duration: 20 }
 ];
 
 const BARBERS = [
-  { id: 'b1', name: 'Marcus Aurelius', rank: 'Master', bio: 'Specialist in classic silhouettes.' },
-  { id: 'b2', name: 'Elena Fisher', rank: 'Senior', bio: 'Expert in modern texture and fades.' },
-  { id: 'b3', name: 'Julian Vane', rank: 'Artisan', bio: 'The region\'s premier beard architect.' }
+  { id: 'b1', name: 'Dominic Vane', rank: 'Master Artisan', specialty: 'Fades & Textures', image: 'DV' },
+  { id: 'b2', name: 'Sarah Sterling', rank: 'Creative Director', specialty: 'Classic Scissor Work', image: 'SS' },
+  { id: 'b3', name: 'Marcus Thorne', rank: 'Beard Architect', specialty: 'Facial Sculpting', image: 'MT' }
 ];
 
-// --- 2. THEME DEFINITIONS ---
-const THEMES = {
-  dark: { bg: '#050505', card: '#111111', accent: '#d4af37', text: '#ffffff', secondary: '#888888', border: '#222222' },
-  light: { bg: '#f9f9f9', card: '#ffffff', accent: '#a16207', text: '#0a0a0a', secondary: '#666666', border: '#e5e5e5' }
-};
-
-// --- 3. STATE MANAGEMENT (REDUCER) ---
-const initialState = {
-  bookings: JSON.parse(localStorage.getItem(APP_KEY)) || {},
-  view: 'client',
-  step: 1,
-  theme: 'dark'
-};
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'TOGGLE_THEME':
-      return { ...state, theme: state.theme === 'dark' ? 'light' : 'dark' };
-    case 'SET_VIEW':
-      return { ...state, view: action.payload, step: 1 };
-    case 'SET_STEP':
-      return { ...state, step: action.payload };
-    case 'ADD_BOOKING': {
-      const { barberId, date, time, serviceId, name } = action.payload;
-      const updated = { ...state.bookings };
-      if (!updated[barberId]) updated[barberId] = {};
-      if (!updated[barberId][date]) updated[barberId][date] = [];
-      
-      updated[barberId][date].push({ id: crypto.randomUUID(), time, serviceId, name, timestamp: Date.now() });
-      localStorage.setItem(APP_KEY, JSON.stringify(updated));
-      return { ...state, bookings: updated, step: 4 };
-    }
-    case 'CANCEL_BOOKING': {
-      const { barberId, date, id } = action.payload;
-      const updated = { ...state.bookings };
-      updated[barberId][date] = updated[barberId][date].filter(b => b.id !== id);
-      localStorage.setItem(APP_KEY, JSON.stringify(updated));
-      return { ...state, bookings: { ...updated } };
-    }
-    default: return state;
+const TIME_SLOTS = (() => {
+  const slots = [];
+  for (let h = 9; h <= 18; h++) {
+    slots.push(`${String(h).padStart(2, '0')}:00`, `${String(h).padStart(2, '0')}:30`);
   }
-}
+  return slots;
+})();
 
-// --- 4. CORE APPLICATION ---
+const StatCard = ({ icon: Icon, label, value, sub }) => (
+  <div className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border-2 border-neutral-200 dark:border-neutral-800 flex flex-col justify-between h-full shadow-sm">
+    <Icon className="text-amber-600 dark:text-amber-400 mb-6" size={24} />
+    <div>
+      <div className="text-3xl font-black text-neutral-900 dark:text-white">{value}</div>
+      <div className="text-[11px] font-black uppercase tracking-widest text-neutral-600 dark:text-neutral-400">{label}</div>
+      {sub && <div className="text-[11px] text-amber-700 dark:text-amber-500 font-bold mt-1">{sub}</div>}
+    </div>
+  </div>
+);
+
 export default function App() {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const [form, setForm] = useState({ name: '', serviceId: 's1', barberId: '', date: '', time: '' });
-  const theme = THEMES[state.theme];
+  const [view, setView] = useState('client');
+  const [step, setStep] = useState(1);
+  const [theme, setTheme] = useState('dark');
+  const [bookings, setBookings] = useState([]);
+  
+  const [form, setForm] = useState({
+    name: '',
+    serviceId: '',
+    addons: [],
+    barberId: '',
+    date: new Date().toISOString().split('T')[0],
+    time: ''
+  });
 
-  // Calculated Time Slots (9 AM - 7 PM)
-  const availableSlots = useMemo(() => {
-    const slots = [];
-    for (let h = 9; h < 19; h++) {
-      slots.push(`${String(h).padStart(2, '0')}:00`, `${String(h).padStart(2, '0')}:30`);
-    }
-    return slots;
+  useEffect(() => {
+    const saved = localStorage.getItem('egc_bookings_v2');
+    if (saved) setBookings(JSON.parse(saved));
   }, []);
 
-  const isSlotTaken = useCallback((barberId, date, time) => {
-    return state.bookings[barberId]?.[date]?.some(b => b.time === time);
-  }, [state.bookings]);
+  useEffect(() => {
+    localStorage.setItem('egc_bookings_v2', JSON.stringify(bookings));
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [bookings, theme]);
 
-  // Analytics Helpers
-  const stats = useMemo(() => {
-    let total = 0;
-    let revenue = 0;
-    Object.values(state.bookings).forEach(barber => {
-      Object.values(barber).forEach(day => {
-        total += day.length;
-        day.forEach(b => {
-          const s = SERVICES.find(srv => srv.id === b.serviceId);
-          revenue += (s?.price || 0);
-        });
-      });
-    });
-    return { total, revenue };
-  }, [state.bookings]);
+  const currentService = SERVICES.find(s => s.id === form.serviceId);
+  const totalCost = (currentService?.price || 0) + 
+    form.addons.reduce((acc, id) => acc + (ADDONS.find(a => a.id === id)?.price || 0), 0);
 
-  // UI Components
-  const Card = ({ children, active, onClick, style }) => (
-    <div 
-      onClick={onClick}
-      style={{ 
-        background: theme.card, border: `1px solid ${active ? theme.accent : theme.border}`,
-        padding: '1.5rem', borderRadius: '16px', cursor: 'pointer', transition: '0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        position: 'relative', overflow: 'hidden', ...style
-      }}
-    >
-      {active && <div style={{ position: 'absolute', top: 0, right: 0, width: '40px', height: '40px', background: theme.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottomLeftRadius: '12px' }}><CheckCircle2 size={16} color={theme.bg}/></div>}
-      {children}
-    </div>
-  );
+  const isSlotBooked = (barberId, date, time) => 
+    bookings.some(b => b.barberId === barberId && b.date === date && b.time === time);
+
+  const handleServiceSelect = (id) => {
+    setForm(f => ({ ...f, serviceId: id }));
+    if (form.name.trim()) {
+       setTimeout(() => setStep(2), 300);
+    }
+  };
+
+  const handleBarberSelect = (id) => {
+    setForm(f => ({ ...f, barberId: id }));
+    setTimeout(() => setStep(3), 300);
+  };
+
+  const confirmBooking = () => {
+    const newEntry = { ...form, id: Date.now(), total: totalCost, createdAt: new Date().toISOString() };
+    setBookings([newEntry, ...bookings]);
+    setStep(4);
+  };
 
   return (
-    <div style={{ background: theme.bg, color: theme.text, minHeight: '100vh', transition: '0.5s', fontFamily: 'Inter, sans-serif' }}>
+    <div className={`min-h-screen transition-colors duration-300 font-sans ${theme === 'dark' ? 'bg-black text-white' : 'bg-white text-black'}`}>
       
-      {/* HEADER */}
-      <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem 5%', borderBottom: `1px solid ${theme.border}`, position: 'sticky', top: 0, background: theme.bg + 'ee', backdropFilter: 'blur(10px)', zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: theme.accent, width: '32px', height: '32px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Scissors size={18} color={theme.bg}/>
+      {/* NAVBAR */}
+      <nav className="sticky top-0 z-50 backdrop-blur-xl border-b-2 border-neutral-100 dark:border-neutral-900 bg-white/90 dark:bg-black/90 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4 cursor-pointer" onClick={() => { setView('client'); setStep(1); }}>
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg">
+              <Scissors size={20} className="text-black" />
+            </div>
+            <div>
+              <h1 className="font-black text-xl tracking-tighter uppercase italic leading-none text-black dark:text-white">Elite Grooming</h1>
+              <p className="text-[10px] font-black tracking-[0.3em] text-amber-600 dark:text-amber-500 uppercase">Artisan Collective</p>
+            </div>
           </div>
-          <h1 style={{ fontWeight: 900, letterSpacing: '-1px', margin: 0 }}>COLLECTIVE <span style={{ color: theme.accent }}>PRO</span></h1>
-        </div>
-        
-        <div style={{ display: 'flex', gap: '0.5rem', background: theme.border, padding: '4px', borderRadius: '12px' }}>
-          <button 
-            onClick={() => dispatch({ type: 'SET_VIEW', payload: 'client' })}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: state.view === 'client' ? theme.card : 'transparent', color: theme.text, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
-          >
-            <Calendar size={16}/> Booking
-          </button>
-          <button 
-            onClick={() => dispatch({ type: 'SET_VIEW', payload: 'admin' })}
-            style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: state.view === 'admin' ? theme.card : 'transparent', color: theme.text, cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}
-          >
-            <LayoutDashboard size={16}/> Dashboard
-          </button>
-          <button 
-            onClick={() => dispatch({ type: 'TOGGLE_THEME' })}
-            style={{ width: '40px', borderRadius: '8px', border: 'none', background: 'transparent', color: theme.text, cursor: 'pointer' }}
-          >
-            {state.theme === 'dark' ? <Sun size={18}/> : <Moon size={18}/>}
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className="bg-neutral-100 dark:bg-neutral-900 p-1 rounded-xl flex">
+              <button 
+                onClick={() => setView('client')}
+                className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${view === 'client' ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-md' : 'text-neutral-500 dark:text-neutral-500 hover:text-black dark:hover:text-white'}`}
+              >
+                Booking
+              </button>
+              <button 
+                onClick={() => setView('admin')}
+                className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${view === 'admin' ? 'bg-white dark:bg-neutral-800 text-black dark:text-white shadow-md' : 'text-neutral-500 dark:text-neutral-500 hover:text-black dark:hover:text-white'}`}
+              >
+                Portal
+              </button>
+            </div>
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-3 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 text-amber-600 dark:text-amber-500 transition-colors"
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+          </div>
         </div>
       </nav>
 
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '3rem 2rem' }}>
-        
-        {state.view === 'client' ? (
-          <div style={{ animation: 'fadeIn 0.6s ease' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
-              <div>
-                <span style={{ color: theme.accent, fontWeight: 800, fontSize: '0.75rem', letterSpacing: '2px' }}>STEP 0{state.step} OF 03</span>
-                <h2 style={{ fontSize: '3rem', fontWeight: 900, margin: '0.5rem 0' }}>{
-                  state.step === 1 ? "Start your journey." : 
-                  state.step === 2 ? "Select your artisan." : 
-                  "Secure your window."
-                }</h2>
-              </div>
-              {state.step > 1 && state.step < 4 && (
-                <button 
-                  onClick={() => dispatch({ type: 'SET_STEP', payload: state.step - 1 })}
-                  style={{ background: 'none', border: `1px solid ${theme.border}`, color: theme.text, padding: '10px 20px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <ChevronLeft size={18}/> Back
-                </button>
-              )}
-            </div>
-
-            {/* STEP 1: IDENTITY & SERVICE */}
-            {state.step === 1 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '3rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  <label style={{ fontWeight: 800, fontSize: '0.8rem', color: theme.secondary }}>FULL LEGAL NAME</label>
-                  <input 
-                    value={form.name}
-                    onChange={e => setForm({...form, name: e.target.value})}
-                    placeholder="e.g. Alexander Hamilton"
-                    style={{ background: theme.card, border: `1px solid ${theme.border}`, padding: '1.5rem', borderRadius: '16px', color: theme.text, fontSize: '1.2rem', outline: 'none' }}
-                  />
-                  <div style={{ marginTop: '1rem' }}>
-                    <p style={{ opacity: 0.5, fontSize: '0.9rem', lineHeight: 1.6 }}>Your data is stored locally in your browser. We prioritize your privacy and performance.</p>
+      <main className="max-w-7xl mx-auto px-6 py-12">
+        {view === 'client' ? (
+          <div className="max-w-5xl mx-auto">
+            
+            {step < 4 && (
+              <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div className="animate-in fade-in slide-in-from-left-4">
+                  <div className="flex gap-2 mb-6">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className={`h-1.5 rounded-full transition-all duration-500 ${step >= i ? 'w-12 bg-amber-500' : 'w-4 bg-neutral-200 dark:bg-neutral-800'}`} />
+                    ))}
                   </div>
+                  <h2 className="text-5xl md:text-7xl font-black tracking-tighter uppercase italic leading-none text-neutral-900 dark:text-white">
+                    {step === 1 && "The Selection"}
+                    {step === 2 && "The Artisan"}
+                    {step === 3 && "The Schedule"}
+                  </h2>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  {SERVICES.map(s => (
-                    <Card key={s.id} active={form.serviceId === s.id} onClick={() => setForm({...form, serviceId: s.id})}>
-                      <div style={{ color: theme.accent, marginBottom: '0.5rem' }}>{s.icon}</div>
-                      <div style={{ fontWeight: 800 }}>{s.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: theme.secondary }}>{s.duration} mins • ${s.price}</div>
-                    </Card>
-                  ))}
-                  <button 
-                    disabled={!form.name || !form.serviceId}
-                    onClick={() => dispatch({ type: 'SET_STEP', payload: 2 })}
-                    style={{ gridColumn: 'span 2', padding: '1.2rem', borderRadius: '12px', background: theme.accent, color: theme.bg, fontWeight: 900, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: form.name ? 1 : 0.3 }}
-                  >
-                    CONTINUE <ChevronRight size={18}/>
+                {step > 1 && (
+                  <button onClick={() => setStep(step - 1)} className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.2em] text-neutral-900 dark:text-neutral-400 hover:text-amber-600 dark:hover:text-amber-500 transition-colors">
+                    <ChevronLeft size={16} /> Back
                   </button>
+                )}
+              </header>
+            )}
+
+            {step === 1 && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 animate-in fade-in slide-in-from-bottom-6">
+                <div className="lg:col-span-8 space-y-12">
+                  <section className="relative">
+                    <label className="text-[12px] font-black uppercase tracking-[0.4em] text-amber-600 dark:text-amber-500 block mb-6">
+                      01. Identification <span className="text-neutral-400 dark:text-neutral-600 ml-2">(Required)</span>
+                    </label>
+                    <div className="relative group">
+                      <input 
+                        autoFocus
+                        autoComplete="off"
+                        className={`w-full bg-neutral-50 dark:bg-neutral-900/80 border-2 rounded-3xl px-8 py-6 text-3xl md:text-5xl font-black outline-none transition-all uppercase shadow-sm
+                          ${form.name ? 'border-amber-500 text-neutral-900 dark:text-white ring-4 ring-amber-500/10' : 'border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white focus:border-amber-500'}
+                          placeholder:text-neutral-300 dark:placeholder:text-neutral-700
+                        `}
+                        placeholder="ENTER FULL NAME"
+                        value={form.name}
+                        onChange={e => setForm({...form, name: e.target.value})}
+                      />
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2">
+                        {form.name.length > 2 ? (
+                          <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center animate-in zoom-in">
+                             <CheckCircle2 size={24} />
+                          </div>
+                        ) : (
+                          <User size={24} className="text-neutral-300 dark:text-neutral-700" />
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className={form.name.length < 2 ? 'opacity-30 pointer-events-none transition-opacity' : 'transition-opacity'}>
+                    <label className="text-[12px] font-black uppercase tracking-[0.4em] text-amber-600 dark:text-amber-500 block mb-6">02. Primary Service</label>
+                    <div className="grid gap-4">
+                      {SERVICES.map(s => (
+                        <button 
+                          key={s.id}
+                          disabled={form.name.length < 2}
+                          onClick={() => handleServiceSelect(s.id)}
+                          className={`group relative p-8 rounded-[2rem] border-2 text-left transition-all ${form.serviceId === s.id ? 'border-amber-500 bg-amber-500 text-black' : 'border-neutral-100 dark:border-neutral-900 bg-neutral-50 dark:bg-neutral-900/50 hover:border-neutral-300 dark:hover:border-neutral-700'}`}
+                        >
+                          <div className="flex justify-between items-center relative z-10">
+                            <div className="flex items-center gap-6">
+                              <span className="text-4xl">{s.icon}</span>
+                              <div>
+                                <h4 className={`font-black text-xl uppercase tracking-tight ${form.serviceId === s.id ? 'text-black' : 'text-neutral-900 dark:text-white'}`}>{s.name}</h4>
+                                <p className={`text-[12px] font-bold ${form.serviceId === s.id ? 'text-black/70' : 'text-neutral-500 dark:text-neutral-400'}`}>{s.desc}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`text-2xl font-black ${form.serviceId === s.id ? 'text-black' : 'text-amber-600 dark:text-amber-500'}`}>${s.price}</div>
+                              <div className={`text-[10px] uppercase font-black ${form.serviceId === s.id ? 'text-black/50' : 'text-neutral-400 dark:text-neutral-600'}`}>{s.duration} MINS</div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+
+                <div className="lg:col-span-4">
+                  <div className="sticky top-32 p-8 rounded-[2.5rem] border-2 border-neutral-100 dark:border-neutral-900 bg-neutral-50 dark:bg-neutral-900/50">
+                    <h3 className="text-[11px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-500 mb-8 flex items-center gap-2">
+                      <Plus size={14} /> Enhancements
+                    </h3>
+                    <div className="space-y-3">
+                      {ADDONS.map(a => (
+                        <button 
+                          key={a.id}
+                          disabled={form.name.length < 2}
+                          onClick={() => setForm(f => ({ ...f, addons: f.addons.includes(a.id) ? f.addons.filter(x => x !== a.id) : [...f.addons, a.id] }))}
+                          className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${form.addons.includes(a.id) ? 'border-amber-500 bg-amber-500 text-black' : 'border-neutral-100 dark:border-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800'}`}
+                        >
+                          <span className="text-[11px] font-black uppercase tracking-widest">{a.name}</span>
+                          <span className={`text-[11px] font-black ${form.addons.includes(a.id) ? 'text-black' : 'text-amber-600 dark:text-amber-500'}`}>+${a.price}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-12 pt-8 border-t-2 border-neutral-200 dark:border-neutral-800 flex justify-between items-end">
+                      <div className="text-[11px] font-black uppercase tracking-widest text-neutral-500">Subtotal</div>
+                      <div className="text-4xl font-black text-neutral-900 dark:text-white">${totalCost}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* STEP 2: BARBER SELECTION */}
-            {state.step === 2 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem' }}>
+            {step === 2 && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in">
                 {BARBERS.map(b => (
-                  <Card key={b.id} active={form.barberId === b.id} onClick={() => setForm({...form, barberId: b.id})}>
-                    <div style={{ width: '60px', height: '60px', background: theme.border, borderRadius: '50%', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={30} color={theme.secondary}/></div>
-                    <div style={{ fontWeight: 800, fontSize: '1.2rem' }}>{b.name}</div>
-                    <div style={{ color: theme.accent, fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '0.5rem' }}>{b.rank} Artisan</div>
-                    <p style={{ fontSize: '0.85rem', color: theme.secondary, margin: 0 }}>{b.bio}</p>
-                    {form.barberId === b.id && (
-                      <button 
-                        onClick={() => dispatch({ type: 'SET_STEP', payload: 3 })}
-                        style={{ width: '100%', marginTop: '1.5rem', background: theme.accent, color: theme.bg, border: 'none', padding: '10px', borderRadius: '8px', fontWeight: 800, cursor: 'pointer' }}
-                      >
-                        SELECT
-                      </button>
-                    )}
-                  </Card>
+                  <button 
+                    key={b.id}
+                    onClick={() => handleBarberSelect(b.id)}
+                    className={`group relative h-[450px] rounded-[3rem] border-4 transition-all overflow-hidden p-10 flex flex-col justify-between text-left ${form.barberId === b.id ? 'border-amber-500 bg-amber-500 text-black' : 'border-neutral-100 dark:border-neutral-900 bg-neutral-50 dark:bg-neutral-900/40 hover:border-neutral-300 dark:hover:border-neutral-700'}`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center font-black text-2xl transition-all ${form.barberId === b.id ? 'bg-black text-amber-500' : 'bg-amber-500 text-black'}`}>
+                        {b.image}
+                      </div>
+                      <Zap size={24} className={form.barberId === b.id ? 'text-black' : 'text-amber-500'} />
+                    </div>
+                    <div>
+                      <h4 className={`text-4xl font-black uppercase tracking-tighter leading-none mb-2 ${form.barberId === b.id ? 'text-black' : 'text-neutral-900 dark:text-white'}`}>{b.name}</h4>
+                      <p className={`text-[11px] font-black uppercase tracking-[0.3em] mb-6 ${form.barberId === b.id ? 'text-black/70' : 'text-amber-600 dark:text-amber-500'}`}>{b.rank}</p>
+                      <p className={`text-sm font-bold leading-relaxed italic border-t-2 pt-6 ${form.barberId === b.id ? 'border-black/20 text-black' : 'border-neutral-200 dark:border-neutral-800 text-neutral-500 dark:text-neutral-400'}`}>"{b.specialty} specialist."</p>
+                    </div>
+                  </button>
                 ))}
               </div>
             )}
 
-            {/* STEP 3: SCHEDULING */}
-            {state.step === 3 && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '3rem' }}>
-                <div>
-                  <input 
-                    type="date" 
-                    min={new Date().toISOString().split('T')[0]}
-                    value={form.date}
-                    onChange={e => setForm({...form, date: e.target.value})}
-                    style={{ width: '100%', background: theme.card, border: `1px solid ${theme.border}`, padding: '1.2rem', borderRadius: '12px', color: theme.text, marginBottom: '2rem' }}
-                  />
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                    {availableSlots.map(slot => {
-                      const taken = isSlotTaken(form.barberId, form.date, slot);
-                      return (
-                        <button 
-                          key={slot}
-                          disabled={taken || !form.date}
-                          onClick={() => setForm({...form, time: slot})}
-                          style={{ 
-                            padding: '12px 5px', borderRadius: '8px', border: `1px solid ${form.time === slot ? theme.accent : theme.border}`,
-                            background: form.time === slot ? theme.accent : 'transparent',
-                            color: form.time === slot ? theme.bg : (taken ? theme.border : theme.text),
-                            cursor: taken ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.8rem'
-                          }}
-                        >
-                          {slot}
-                        </button>
-                      );
-                    })}
-                  </div>
+            {step === 3 && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 animate-in fade-in">
+                <div className="lg:col-span-8 space-y-12">
+                  <section>
+                    <label className="text-[11px] font-black uppercase tracking-[0.4em] text-amber-600 dark:text-amber-500 block mb-6">01. Calendar Date</label>
+                    <div className="p-8 rounded-[2.5rem] bg-neutral-50 dark:bg-neutral-900 border-2 border-neutral-100 dark:border-neutral-800">
+                      <input 
+                        type="date" 
+                        className="w-full bg-transparent border-none text-4xl font-black uppercase tracking-tighter outline-none cursor-pointer [color-scheme:dark] text-neutral-900 dark:text-white"
+                        value={form.date}
+                        onChange={e => setForm({...form, date: e.target.value, time: ''})}
+                      />
+                    </div>
+                  </section>
+
+                  <section>
+                    <label className="text-[11px] font-black uppercase tracking-[0.4em] text-amber-600 dark:text-amber-500 block mb-6">02. Windows</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                      {TIME_SLOTS.map(t => {
+                        const booked = isSlotBooked(form.barberId, form.date, t);
+                        const selected = form.time === t;
+                        return (
+                          <button
+                            key={t}
+                            disabled={booked}
+                            onClick={() => setForm({...form, time: t})}
+                            className={`py-5 rounded-2xl font-black text-sm transition-all border-2 ${
+                              selected ? 'bg-amber-500 text-black border-amber-500 shadow-xl' :
+                              booked ? 'opacity-20 bg-neutral-100 dark:bg-neutral-900 text-neutral-400 cursor-not-allowed border-transparent' :
+                              'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white hover:border-amber-500'
+                            }`}
+                          >
+                            {t}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
                 </div>
-                <div style={{ background: theme.card, padding: '2rem', borderRadius: '24px', border: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  <h3 style={{ margin: 0 }}>Review Details</h3>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span style={{ color: theme.secondary }}>Client</span>
-                    <span style={{ fontWeight: 700 }}>{form.name}</span>
+
+                <div className="lg:col-span-4">
+                  <div className={`p-10 rounded-[3rem] border-4 transition-all sticky top-32 ${form.time ? 'border-amber-500 bg-amber-500/10' : 'border-neutral-100 dark:border-neutral-900'}`}>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter mb-8 italic text-neutral-900 dark:text-white">Summary</h3>
+                    <div className="space-y-8">
+                      {[
+                        { icon: User, label: 'Client', value: form.name || 'REQUIRED' },
+                        { icon: Scissors, label: 'Service', value: currentService?.name || 'REQUIRED' },
+                        { icon: Clock, label: 'Schedule', value: form.time ? `${form.date} @ ${form.time}` : 'PICK TIME' }
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center gap-5">
+                          <div className="w-12 h-12 rounded-2xl bg-amber-500 text-black flex items-center justify-center shadow-lg">
+                            <item.icon size={20} />
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">0{i+1}. {item.label}</p>
+                            <p className="text-md font-black uppercase text-neutral-900 dark:text-white">{item.value}</p>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="pt-8 border-t-2 border-neutral-200 dark:border-neutral-800">
+                        <div className="flex justify-between items-center mb-10">
+                          <span className="text-[11px] font-black uppercase tracking-widest text-neutral-500">Final Total</span>
+                          <span className="text-4xl font-black text-neutral-900 dark:text-white">${totalCost}</span>
+                        </div>
+                        <button 
+                          disabled={!form.time || !form.name}
+                          onClick={confirmBooking}
+                          className="w-full py-6 rounded-2xl bg-amber-500 text-black font-black text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-amber-500/30 disabled:opacity-30 uppercase tracking-[0.2em]"
+                        >
+                          Confirm Session
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span style={{ color: theme.secondary }}>Professional</span>
-                    <span style={{ fontWeight: 700 }}>{BARBERS.find(b => b.id === form.barberId)?.name}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span style={{ color: theme.secondary }}>Service</span>
-                    <span style={{ fontWeight: 700 }}>{SERVICES.find(s => s.id === form.serviceId)?.name}</span>
-                  </div>
-                  <div style={{ height: '1px', background: theme.border }}/>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem' }}>
-                    <span style={{ fontWeight: 800 }}>Total</span>
-                    <span style={{ color: theme.accent, fontWeight: 800 }}>${SERVICES.find(s => s.id === form.serviceId)?.price}</span>
-                  </div>
-                  <button 
-                    disabled={!form.time}
-                    onClick={() => dispatch({ type: 'ADD_BOOKING', payload: form })}
-                    style={{ width: '100%', padding: '1.2rem', borderRadius: '12px', background: theme.accent, color: theme.bg, fontWeight: 900, border: 'none', cursor: 'pointer', marginTop: '1rem', opacity: form.time ? 1 : 0.3 }}
-                  >
-                    FINALIZE APPOINTMENT
-                  </button>
                 </div>
               </div>
             )}
 
-            {state.step === 4 && (
-              <div style={{ textAlign: 'center', padding: '5rem 0', animation: 'fadeIn 0.8s ease' }}>
-                <div style={{ width: '80px', height: '80px', background: theme.accent, borderRadius: '50%', margin: '0 auto 2rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <CheckCircle2 size={40} color={theme.bg}/>
+            {step === 4 && (
+              <div className="text-center py-20 animate-in fade-in zoom-in">
+                <div className="w-32 h-32 bg-amber-500 rounded-[3rem] flex items-center justify-center mx-auto mb-12 shadow-2xl rotate-12">
+                   <CheckCircle2 size={64} className="text-black -rotate-12" />
                 </div>
-                <h2 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '1rem' }}>Awaiting your arrival.</h2>
-                <p style={{ color: theme.secondary, maxWidth: '400px', margin: '0 auto 2.5rem', lineHeight: 1.6 }}>Your reservation has been logged into the collective ledger. We recommend arriving 5 minutes early.</p>
-                <button 
-                  onClick={() => dispatch({ type: 'SET_STEP', payload: 1 })}
-                  style={{ background: theme.border, color: theme.text, border: 'none', padding: '15px 30px', borderRadius: '12px', fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Book Another Session
-                </button>
+                <h2 className="text-7xl md:text-9xl font-black tracking-tighter uppercase italic mb-6 text-neutral-900 dark:text-white">Confirmed</h2>
+                <p className="text-xl font-bold text-neutral-500 dark:text-neutral-400 max-w-lg mx-auto mb-16 leading-relaxed">
+                  Your artisan session is secured. A digital receipt has been logged.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button onClick={() => setView('admin')} className="px-12 py-5 rounded-2xl bg-neutral-900 dark:bg-white text-white dark:text-black font-black text-[11px] uppercase tracking-widest hover:scale-105 transition-transform">Registry Access</button>
+                  <button onClick={() => { setStep(1); setForm({ ...form, time: '', addons: [], name: '' }); }} className="px-12 py-5 rounded-2xl bg-amber-500 text-black font-black text-[11px] uppercase tracking-widest shadow-xl hover:scale-105 transition-transform">Book Again</button>
+                </div>
               </div>
             )}
           </div>
         ) : (
-          /* DASHBOARD VIEW */
-          <div style={{ animation: 'fadeIn 0.5s ease' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '3rem' }}>
-              <div style={{ background: theme.card, padding: '2rem', borderRadius: '20px', border: `1px solid ${theme.border}` }}>
-                <TrendingUp color={theme.accent} style={{ marginBottom: '1rem' }}/>
-                <div style={{ fontSize: '2rem', fontWeight: 900 }}>${stats.revenue}</div>
-                <div style={{ color: theme.secondary, fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Gross Revenue</div>
+          /* PORTAL VIEW */
+          <div className="space-y-12 animate-in fade-in">
+            <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
+              <div>
+                <h2 className="text-7xl font-black tracking-tighter uppercase italic text-neutral-900 dark:text-white">Registry</h2>
+                <p className="text-amber-600 dark:text-amber-500 font-black uppercase tracking-[0.4em] text-[12px] mt-2">Executive Overview</p>
               </div>
-              <div style={{ background: theme.card, padding: '2rem', borderRadius: '20px', border: `1px solid ${theme.border}` }}>
-                <Calendar color={theme.accent} style={{ marginBottom: '1rem' }}/>
-                <div style={{ fontSize: '2rem', fontWeight: 900 }}>{stats.total}</div>
-                <div style={{ color: theme.secondary, fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Active Bookings</div>
-              </div>
-              <div style={{ background: theme.card, padding: '2rem', borderRadius: '20px', border: `1px solid ${theme.border}` }}>
-                <Clock color={theme.accent} style={{ marginBottom: '1rem' }}/>
-                <div style={{ fontSize: '2rem', fontWeight: 900 }}>96%</div>
-                <div style={{ color: theme.secondary, fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase' }}>Capacity Efficiency</div>
-              </div>
+              <button 
+                onClick={() => setBookings([])}
+                className="px-8 py-4 rounded-xl bg-red-600 text-white font-black text-[11px] uppercase tracking-widest flex items-center gap-2 hover:bg-red-700 transition-all shadow-lg"
+              >
+                <Trash2 size={16} /> Wipe Database
+              </button>
+            </header>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard icon={TrendingUp} label="Gross Revenue" value={`$${bookings.reduce((a, b) => a + b.total, 0)}`} sub="Direct Deposit" />
+              <StatCard icon={Calendar} label="Appointments" value={bookings.length} sub="Scheduled" />
+              <StatCard icon={Clock} label="Waitlist" value="0" sub="Zero Latency" />
+              <StatCard icon={ShieldCheck} label="System Status" value="Secure" sub="v4.0.2 Active" />
             </div>
 
-            <div style={{ display: 'grid', gap: '2rem' }}>
-              {BARBERS.map(barber => (
-                <div key={barber.id} style={{ background: theme.card, borderRadius: '24px', border: `1px solid ${theme.border}`, padding: '2rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.5rem' }}>{barber.name}</h3>
-                    <span style={{ background: theme.bg, padding: '4px 12px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800, border: `1px solid ${theme.border}` }}>{barber.rank.toUpperCase()}</span>
-                  </div>
-                  
-                  {Object.entries(state.bookings[barber.id] || {}).length === 0 ? (
-                    <div style={{ opacity: 0.3, padding: '2rem', textAlign: 'center', border: `2px dashed ${theme.border}`, borderRadius: '16px' }}>No upcoming sessions.</div>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+              <div className="lg:col-span-8 space-y-6">
+                <h3 className="text-[12px] font-black uppercase tracking-[0.4em] text-neutral-900 dark:text-neutral-500">Live Queue</h3>
+                <div className="space-y-4">
+                  {bookings.length === 0 ? (
+                    <div className="py-40 text-center border-4 border-dashed border-neutral-100 dark:border-neutral-900 rounded-[3rem]">
+                      <p className="text-neutral-300 dark:text-neutral-700 font-black uppercase tracking-widest text-[12px]">Registry is empty</p>
+                    </div>
                   ) : (
-                    Object.entries(state.bookings[barber.id]).map(([date, items]) => (
-                      <div key={date} style={{ marginBottom: '1.5rem' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 900, color: theme.secondary, textTransform: 'uppercase', marginBottom: '0.8rem', borderBottom: `1px solid ${theme.border}`, paddingBottom: '4px' }}>{date}</div>
-                        <div style={{ display: 'grid', gap: '8px' }}>
-                          {items.map(item => (
-                            <div key={item.id} style={{ background: theme.bg, padding: '1rem', borderRadius: '12px', border: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                                <div style={{ fontWeight: 800, width: '60px' }}>{item.time}</div>
-                                <div>
-                                  <div style={{ fontWeight: 700 }}>{item.name}</div>
-                                  <div style={{ fontSize: '0.75rem', color: theme.accent }}>{SERVICES.find(s => s.id === item.serviceId)?.name}</div>
-                                </div>
-                              </div>
-                              <button 
-                                onClick={() => dispatch({ type: 'CANCEL_BOOKING', payload: { barberId: barber.id, date, id: item.id } })}
-                                style={{ background: 'none', border: 'none', color: '#ff4b4b', cursor: 'pointer', padding: '8px' }}
-                              >
-                                <Trash2 size={18}/>
-                              </button>
+                    bookings.map(b => (
+                      <div key={b.id} className="group p-8 rounded-[2.5rem] bg-neutral-50 dark:bg-neutral-900/60 border-2 border-neutral-100 dark:border-neutral-800 hover:border-amber-500 transition-all flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                          <div className="w-16 h-16 bg-amber-500 text-black rounded-2xl flex items-center justify-center font-black text-sm shadow-inner">
+                            {b.time}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-1">
+                              <h4 className="font-black text-xl uppercase tracking-tight text-neutral-900 dark:text-white">{b.name}</h4>
+                              <span className="px-3 py-1 bg-black dark:bg-white text-white dark:text-black rounded-lg text-[9px] font-black uppercase tracking-widest">
+                                {BARBERS.find(br => br.id === b.barberId)?.name}
+                              </span>
                             </div>
-                          ))}
+                            <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">
+                              {SERVICES.find(s => s.id === b.serviceId)?.name} • {b.date}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-8 justify-between md:justify-end">
+                          <div className="text-right">
+                            <div className="text-3xl font-black text-neutral-900 dark:text-white">${b.total}</div>
+                            <div className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Paid In Full</div>
+                          </div>
+                          <button 
+                            onClick={() => setBookings(bookings.filter(bk => bk.id !== b.id))}
+                            className="p-4 rounded-xl bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                          >
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </div>
                     ))
                   )}
                 </div>
-              ))}
+              </div>
+
+              <div className="lg:col-span-4 space-y-10">
+                <section>
+                  <h3 className="text-[12px] font-black uppercase tracking-[0.4em] text-neutral-900 dark:text-neutral-500 mb-6">Staff Load</h3>
+                  <div className="space-y-4">
+                    {BARBERS.map(b => {
+                      const count = bookings.filter(bk => bk.barberId === b.id).length;
+                      const percentage = Math.min((count / 10) * 100, 100);
+                      return (
+                        <div key={b.id} className="p-8 rounded-[2rem] bg-neutral-50 dark:bg-neutral-900 border-2 border-neutral-100 dark:border-neutral-800">
+                          <div className="flex justify-between items-center mb-5">
+                            <div>
+                              <h4 className="font-black uppercase tracking-tight text-neutral-900 dark:text-white">{b.name}</h4>
+                              <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest">{b.rank}</p>
+                            </div>
+                            <div className="text-neutral-900 dark:text-white font-black text-lg">{count}</div>
+                          </div>
+                          <div className="h-2 w-full bg-neutral-200 dark:bg-black rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-500 transition-all duration-1000" style={{ width: `${percentage}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              </div>
             </div>
           </div>
         )}
       </main>
 
+      <footer className="py-20 border-t-2 border-neutral-100 dark:border-neutral-900 mt-20">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-8 opacity-40">
+          <div className="flex items-center gap-2">
+            <Scissors size={14} className="text-neutral-900 dark:text-white" />
+            <span className="text-[11px] font-black uppercase tracking-[0.5em] text-neutral-900 dark:text-white">Elite Collective</span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white">Proprietary Grooming Infrastructure</p>
+        </div>
+      </footer>
+
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .animate-in { animation: fadeIn 0.4s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
         input[type="date"]::-webkit-calendar-picker-indicator {
-          filter: ${state.theme === 'dark' ? 'invert(1)' : 'none'};
+          background-color: #f59e0b;
+          padding: 8px;
+          cursor: pointer;
+          border-radius: 8px;
+        }
+
+        /* Input caret color for better visibility */
+        input {
+          caret-color: #f59e0b;
         }
       `}</style>
     </div>
